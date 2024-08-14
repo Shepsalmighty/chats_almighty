@@ -36,11 +36,34 @@ async def on_sub(sub: ChatSub):
 # this will be called whenever the !reply command is issued
 async def test_command(cmd: ChatCommand):
     if len(cmd.parameter) == 0:
+        await asyncio.sleep(1.5)
         await cmd.reply('you did not tell me what to reply with')
     else:
+        await asyncio.sleep(1.5)
         await cmd.reply(f'{cmd.user.name}: {cmd.parameter}')
 
+async def help_command(cmd: ChatCommand):
+    if len(cmd.parameter) == 0:
+        await cmd.reply("you can !set the following commands: !today, !discord, !socials, !vimbad, !noArch, !Archbad "
+                        "for more information about each command type !help !command "
+                        "e.g. \"!help !discord \""
+                        "IMPORTANT - !set overwrites previous entries")
+    elif cmd.parameter == "!discord":
+        await cmd.reply("you can add your discord link by using \"!set !discord >link<\". IMPORTANT !set will overwrite previous links")
+    elif cmd.parameter == "!today":
+        await cmd.reply("you can tell your community what you're upto today with \"!set !today \"description\". IMPORTANT !set will overwrite previous entries.")
+    elif cmd.parameter == "!vimbad":
+        await cmd.reply("it's true. vim = bad")
 
+#TODO: write a !set function/cmd that overwrites previous entries
+
+#TODO: add discord link
+
+async def discord_link(cmd: ChatCommand):
+    #TODO: TARGET_CHANNEL won't work when the bot has it's own acc as that acc will never be setting params in other peoples chats
+    if len(cmd.parameter) == 0 and cmd.user.name == TARGET_CHANNEL:
+        user_discord = input("add a link to your discord using !add >your link here<")
+    return user_discord
 # this is where we set up the bot
 async def run():
     # set up twitch api instance and add user authentication with some scopes
@@ -64,8 +87,10 @@ async def run():
     chat.register_event(ChatEvent.SUB, on_sub)
     # there are more events, you can view them all in this documentation
 
-    # you can directly register commands and their handlers, this will register the !reply command
+#INFO you must directly register commands and their handlers, this will register the !reply command
     chat.register_command('reply', test_command)
+    chat.register_command('help', help_command)
+    chat.register_command('discord', discord_link)
 
 
     # we are done with our setup, lets start this bot up!
