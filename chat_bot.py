@@ -11,6 +11,8 @@ from pathlib import Path
 USER_SCOPE = [AuthScope.CHAT_READ, AuthScope.CHAT_EDIT]
 TARGET_CHANNEL = 'shepsalmighty'
 
+#TODO regorg into a class instead of functions
+
 
 # this will be called when the event READY is triggered, which will be on bot start
 async def on_ready(ready_event: EventData):
@@ -31,7 +33,6 @@ async def on_sub(sub: ChatSub):
     print(f'New subscription in {sub.room.name}:\\n'
           f'  Type: {sub.sub_plan}\\n'
           f'  Message: {sub.sub_message}')
-
 
 # this will be called whenever the !reply command is issued
 async def test_command(cmd: ChatCommand):
@@ -57,13 +58,16 @@ async def help_command(cmd: ChatCommand):
 
 #TODO: write a !set function/cmd that overwrites previous entries
 
-#TODO: add discord link
-
-async def discord_link(cmd: ChatCommand):
+async def discord_command(cmd: ChatCommand):
     #TODO: TARGET_CHANNEL won't work when the bot has it's own acc as that acc will never be setting params in other peoples chats
     if len(cmd.parameter) == 0 and cmd.user.name == TARGET_CHANNEL:
-        user_discord = input("add a link to your discord using !add >your link here<")
+        return "add a link to your discord (this can be changed later using !set !discord) - paste link here:"
+    elif len(cmd.parameter) > 0 and cmd.user.name == TARGET_CHANNEL:
+        print(type(cmd.parameter))
+        return cmd.parameter
     return user_discord
+
+
 # this is where we set up the bot
 async def run():
     # set up twitch api instance and add user authentication with some scopes
@@ -90,7 +94,7 @@ async def run():
 #INFO you must directly register commands and their handlers, this will register the !reply command
     chat.register_command('reply', test_command)
     chat.register_command('help', help_command)
-    chat.register_command('discord', discord_link)
+    chat.register_command('discord', discord_command)
 
 
     # we are done with our setup, lets start this bot up!
