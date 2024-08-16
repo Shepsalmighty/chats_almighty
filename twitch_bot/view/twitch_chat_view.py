@@ -32,6 +32,7 @@ class TwitchChatView:
 
     #TODO: add !functions !reply !discord !set etc
 
+
     # this is where we set up the bot
     async def run(self):
         # set up twitch api instance and add user authentication with some scopes
