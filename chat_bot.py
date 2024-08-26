@@ -11,8 +11,6 @@ from pathlib import Path
 USER_SCOPE = [AuthScope.CHAT_READ, AuthScope.CHAT_EDIT]
 TARGET_CHANNEL = 'shepsalmighty'
 
-#TODO regorg into a class instead of functions
-
 
 # this will be called when the event READY is triggered, which will be on bot start
 async def on_ready(ready_event: EventData):
@@ -108,7 +106,12 @@ async def run():
         chat.stop()
         await twitch.close()
 
-# pulls client_id and client_secret from .env to be used by ansyncio.run
-load_dotenv()
-# lets run our setup
-asyncio.run(run())
+# # pulls client_id and client_secret from .env to be used by ansyncio.run
+# load_dotenv()
+# # lets run our setup
+# asyncio.run(run())
+
+myarg = "!discord link"
+new_list = myarg.split(" ")
+
+print(new_list[0][1:])
