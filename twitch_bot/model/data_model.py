@@ -6,6 +6,14 @@ from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm import relationship
+from sqlalchemy import create_engine
+
+
+
+#TODO: error handling e.g. if no uid given or strings empty/NULL
+#TODO: consider adding 'relationships' where appropriate to classes/for tables
+#NOTE: if storing date/time or timestamps do as 'seconds since Epoch' -stderr (thank later)
+#NOTE: we're using pysqlite - IF speed or db blocking the bot becomes an issue we'll need aiosqlite for async shtuffs
 
 class Base(DeclarativeBase):
     pass
@@ -57,4 +65,9 @@ class Command(Base):
         return f"User(uid={self.uid!r}, channel_id={self.channel_id!r}, command_name={self.command_name!r})"
 
 
-print(dir(row1))
+# if __name__ == "__main__":
+#     # relative path to db file:
+#     engine = create_engine("sqlite:///twitch_bot.db", echo=True)
+
+#     #below generates our SCHEMA at once in our target sqlite DB
+#     # Base.metadata.create_all(engine)
