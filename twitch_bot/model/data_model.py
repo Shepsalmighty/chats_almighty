@@ -10,7 +10,6 @@ from sqlalchemy.orm import relationship
 class Base(DeclarativeBase):
     pass
 
-
 class Channel(Base):
     # this models an entry in the data table
     # def __init__(self, uid, channel_name):
@@ -36,8 +35,8 @@ class LinkCommand(Base):
     ##############################################################
     __tablename__ = "link_command"
 
-    channel_id: Mapped[int] = mapped_column(primary_key=True)
-    uid: Mapped[int] = mapped_column(ForeignKey("Channel.uid"))
+    uid: Mapped[int] = mapped_column(primary_key=True)
+    channel_id: Mapped[int] = mapped_column(ForeignKey("channel.uid"))
     command_name: Mapped[str] = mapped_column(String(30))
 
     def __repr__(self) -> str:
@@ -50,10 +49,9 @@ class Command(Base):
     #     self.channel_id = channel_id
     #     self.command_name = command_name
     __tablename__ = "command_name"
-    command_name: Mapped[str] = mapped_column(primary_key=True)
-    channel_id: Mapped[str] = mapped_column(String(30))
-    uid: Mapped[int] = mapped_column(ForeignKey("link_command.uid"))
-
+    uid: Mapped[int] = mapped_column(primary_key=True)
+    channel_id: Mapped[str] = mapped_column(String(30), ForeignKey("channel.uid"))
+    command_name: Mapped[str] = mapped_column()
 
     def __repr__(self) -> str:
         return f"User(uid={self.uid!r}, channel_id={self.channel_id!r}, command_name={self.command_name!r})"
