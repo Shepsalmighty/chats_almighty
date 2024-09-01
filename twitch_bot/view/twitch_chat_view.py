@@ -113,12 +113,9 @@ class TwitchChatView:
         #
         # # INFO you must directly register commands and their handlers, this will register the 1st command !reply
         # chat.register_command('reply', test_command)
-        # chat.register_command('help', help_command)
-        # chat.register_command('discord', self.discord_command)
         chat.register_command('set', self.set_command)
         for link in self.allowed_user_values:
             chat.register_command(link, self.link_command)
-        # chat.register_command('youtube', self.youtube_command)
         # chat.register_command('discord', self.link_command)
         # chat.register_command('youtube', self.link_command)
 

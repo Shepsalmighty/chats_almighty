@@ -11,7 +11,7 @@ from sqlalchemy import create_engine
 
 
 #TODO: error handling e.g. if no uid given or strings empty/NULL
-#TODO: consider adding 'relationships' where appropriate to classes/for tables
+#TODO: consider adding 'relationships' where appropriate to classes/for tables examples in example code here: https://docs.sqlalchemy.org/en/20/orm/quickstart.html#declare-models
 #NOTE: if storing date/time or timestamps do as 'seconds since Epoch' -stderr (thank later)
 #NOTE: we're using pysqlite - IF speed or db blocking the bot becomes an issue we'll need aiosqlite for async shtuffs
 
@@ -65,9 +65,23 @@ class Command(Base):
         return f"User(uid={self.uid!r}, channel_id={self.channel_id!r}, command_name={self.command_name!r})"
 
 
+
+
+
+#INFO some examples working with tranq below
+
 # if __name__ == "__main__":
 #     # relative path to db file:
 #     engine = create_engine("sqlite:///twitch_bot.db", echo=True)
 
 #     #below generates our SCHEMA at once in our target sqlite DB
 #     # Base.metadata.create_all(engine)
+# if __name__ == "__main__":
+#     engine = create_engine("sqlite:///twitch_bot.db", echo=True)
+#     c1 = Channel(uid=69, channel_name="shepsalmighty")
+#
+#     with Session(engine) as session:
+#         session.add(c1)
+#         # NOTE: in this example below we set uid=69 from sheps to tranq and uid69 would be tranq when committed
+#         # c1.channel_name = "Sea_of_Tranquility"
+#         session.commit()
