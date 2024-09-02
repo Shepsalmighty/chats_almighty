@@ -9,6 +9,8 @@ from dotenv import load_dotenv
 from os import getenv
 from pathlib import Path
 
+#TODO: Add a reply if anyone types "sudo !!" of "nice try"
+
 #INFO in the view class all user interactions are defined, it represents the user interface, commands like !discord or !help are part of it
 class TwitchChatView:
 
@@ -129,3 +131,4 @@ class TwitchChatView:
             # now we can close the chat bot and the twitch api client
             chat.stop()
             await twitch.close()
+# chat_view_instance = TwitchChatView()

@@ -45,10 +45,11 @@ class LinkCommand(Base):
 
     uid: Mapped[int] = mapped_column(primary_key=True)
     channel_id: Mapped[int] = mapped_column(ForeignKey("channel.uid"))
-    command_name: Mapped[str] = mapped_column()
+    command_id: Mapped[int] = mapped_column(ForeignKey("command.uid"))
+    link: Mapped[str] = mapped_column()
 
     def __repr__(self) -> str:
-        return f"User(uid={self.uid!r}, channel_id={self.channel_id!r}, command_name={self.command_name!r})"
+        return f"User(uid={self.uid!r}, channel_id={self.channel_id!r}, command_id={self.command_id!r}, link={self.link})"
 
 
 class Command(Base):

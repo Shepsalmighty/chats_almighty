@@ -26,6 +26,8 @@ class ChatBotController:
         with Session(self.engine) as session:
             self.model = DataBase(session)
             self.model.add_channel("Sea_of_Tranquility")
+            self.model.add_link("Sea_of_Tranquility", "discord", "foo")
+            print(self.model.get_link("discord"))
             print(self.model.get_channel("Sea_of_Tranquility"))
             asyncio.run(self.view.run())
             session.commit()
