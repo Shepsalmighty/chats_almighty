@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 from os import getenv
 from pathlib import Path
 
+
 #TODO: Add a reply if anyone types "sudo !!" of "nice try"
 
 #INFO in the view class all user interactions are defined, it represents the user interface, commands like !discord or !help are part of it
@@ -45,6 +46,8 @@ class TwitchChatView:
                 await cmd.reply("command set incorrectly, did you forget to add the link?")
             elif args[0][1:] in self.allowed_user_values:
                 self.user_values[args[0][1:]] = args[1]
+            #TODO: add stuff to sqldb from here
+            
             # elif args[0] == "!discord":
             #     self.user_values["discord"] = args[1]
             # elif args[0] == "!youtube":

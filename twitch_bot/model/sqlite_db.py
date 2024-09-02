@@ -26,18 +26,8 @@ class DBMigration:
         CREATE TABLE IF NOT EXISTS channel(
             uid INTEGER NOT NULL,
             channel_name TEXT NOT NULL,
-            PRIMARY KEY (`uid`),
-            FOREIGN KEY (`channel_name`)) 
-        """)
-        cur.execute("""
-        CREATE TABLE IF NOT EXISTS command_links(
-            uid INTEGER NOT NULL, 
-            channel_id INTEGER NOT NULL,
-            command_id INTEGER NOT NULL,
-            link TEXT NOT NULL,
-            PRIMARY KEY (`uid`),
-            FOREIGN KEY channel_id REFERENCES channel(`uid`),
-            FOREIGN KEY command_id REFERENCES command_name(`uid`))
+            PRIMARY KEY (`uid`))
+             
             """)
         cur.execute("""
         CREATE TABLE IF NOT EXISTS command_name(
@@ -45,8 +35,19 @@ class DBMigration:
             channel_id INTEGER NOT NULL,
             command_name TEXT NOT NULL,
             PRIMARY KEY (`uid`),
-            FOREIGN KEY channel_id REFERENCES channel(`uid`))
-        """)
+            FOREIGN KEY (`channel_id`) REFERENCES channel(`uid`))
+            """)
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS command_links(
+            uid INTEGER NOT NULL, 
+            channel_id INTEGER NOT NULL,
+            command_id INTEGER NOT NULL,
+            link TEXT NOT NULL,
+            PRIMARY KEY (`uid`),
+            FOREIGN KEY (`channel_id`) REFERENCES channel(`uid`),
+            FOREIGN KEY (`command_id`) REFERENCES command_name(`uid`))
+            """)
+
 
 if __name__ == "__main__":
     DBMigration().create_tables()
