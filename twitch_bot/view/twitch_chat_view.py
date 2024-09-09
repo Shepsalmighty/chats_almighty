@@ -8,6 +8,8 @@ import asyncio
 from dotenv import load_dotenv
 from os import getenv
 from pathlib import Path
+import sqlite3
+
 
 
 #TODO: Add a reply if anyone types "sudo !!" of "nice try"
@@ -25,6 +27,7 @@ class TwitchChatView:
         self.channel = target_channel
         self.user_values = {}
         self.allowed_user_values = ["youtube", "discord", "github", "today", "schedule"]
+        self.lock = asyncio.Lock()
 
     async def on_message(self, msg: ChatMessage):
         print(f'in {msg.room.name}, {msg.user.name} said: {msg.text}')
@@ -44,10 +47,26 @@ class TwitchChatView:
             args = cmd.parameter.split(" ",1)
             if len(args) < 2:
                 await cmd.reply("command set incorrectly, did you forget to add the link?")
-            elif args[0][1:] in self.allowed_user_values:
-                self.user_values[args[0][1:]] = args[1]
-            #TODO: add stuff to sqldb from here
-            
+
+            #creating a lock to avoid multiple cursor objects accessing the table at once causing issues
+            # await self.lock.acquire()
+            async with self.lock:
+            # try:
+                #creating connection to db and cursor objects
+                con = sqlite3.connect("twitch_bot.db")
+                cur = con.cursor()
+                channel_uid = cur.execute('SELECT uid FROM channel WHERE channel_name = ?', (self.channel,))
+                command_uid = cur.execute('INSERT INTO command_name (channel_id, command_name) VALUES (?,?) RETURNING (uid)', (channel_uid, args[0][1:]))
+                cur.execute('INSERT INTO command_links (command_uid, link) VALUES (?,?)', (command_uid, args[1]))
+                con.commit()
+            # finally:
+            #     self.lock.release()
+
+            # below checked predefined allowed commands, but as is limiting and in dict switching to full user control of inputs and using sql db
+            # elif args[0][1:] in self.allowed_user_values:
+            #     self.user_values[args[0][1:]] = args[1]
+            # args[0][1:] would strip !discord to be discord which is why we're using that
+
             # elif args[0] == "!discord":
             #     self.user_values["discord"] = args[1]
             # elif args[0] == "!youtube":
@@ -63,12 +82,32 @@ class TwitchChatView:
            await cmd.reply("you cannot change bot settings")
 
     async def link_command(self, cmd: ChatCommand):
-        if cmd.name in self.user_values:
-            await cmd.reply(self.user_values.get(cmd.name))
-        elif len(cmd.parameter) == 0 and cmd.user.name == self.channel:
-            await cmd.reply(f"add a link to your {cmd.name} using \"!set !{cmd.name} link\"   ")
-        elif len(cmd.parameter) >= 0 and cmd.user.name != self.channel:
-            await cmd.reply(f"no {cmd.name} link yet")
+        # if cmd.name in self.user_values:
+        #     await cmd.reply(self.user_values.get(cmd.name))
+        # elif len(cmd.parameter) == 0 and cmd.user.name == self.channel:
+        #     await cmd.reply(f"add a link to your {cmd.name} using \"!set !{cmd.name} link\"   ")
+        # elif len(cmd.parameter) >= 0 and cmd.user.name != self.channel:
+        #     await cmd.reply(f"no {cmd.name} link yet")
+
+        """check command in db
+        get link for command if in db
+        print !set reply if cmd not found"""
+        async with self.lock:
+            con = sqlite3.connect("twitch_bot.db")
+            cur = con.cursor()
+            # cmd_exists = cur.execute('SELECT command_name.command_id, command_links.link FROM command_name, command_links WHERE command_name.command_id AND command_links.link IS NOT NULL RETURNING command_links.link')
+            cmd_exists = cur.execute('SELECT link FROM command_links WHERE link IS NOT NULL')
+
+            cmd_link = cmd_exists.fetchone()
+            if cmd_link:
+                await cmd.reply(cmd_link)
+            elif not cmd_link and cmd.user.name == self.channel:
+                await cmd.reply(f"add a link to your {cmd.name} using \"!set !{cmd.name} link\"   ")
+            elif not cmd_link and cmd.user.name != self.channel:
+                await cmd.reply(f"no {cmd.name} link yet")
+
+
+
 
 
     # async def discord_command(self, cmd: ChatCommand):

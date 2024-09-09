@@ -443,3 +443,5 @@ fabric.properties
 
 .idea/
 dont_show_on_stream.json
+*.sqbpro
+*.db

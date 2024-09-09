@@ -24,11 +24,10 @@ class ChatBotController:
     def run(self):
         # NOTE every transaction with the DataBase runs inside this, so in db_interface, everything is executed within this session
         with Session(self.engine) as session:
-            self.model = DataBase(session)
-            self.model.add_channel("Sea_of_Tranquility")
-            self.model.add_link("Sea_of_Tranquility", "discord", "foo")
-            print(self.model.get_link("discord"))
-            print(self.model.get_channel("Sea_of_Tranquility"))
+            # self.model = DataBase(session)
+            # self.model.add_channel("Sea_of_Tranquility")
+            # self.model.add_link("Sea_of_Tranquility", "discord", "foo")
+
             asyncio.run(self.view.run())
             session.commit()
 
