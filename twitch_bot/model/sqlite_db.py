@@ -23,28 +23,29 @@ class DBMigration:
 
         # creating all tables needed if not existing
         cur.execute("""
-        CREATE TABLE IF NOT EXISTS channel(
+        CREATE TABLE IF NOT EXISTS channels(
             uid INTEGER NOT NULL,
-            channel_name TEXT NOT NULL,
+            name TEXT NOT NULL UNIQUE,
             PRIMARY KEY (`uid`))
             """)
 
         cur.execute("""
-        CREATE TABLE IF NOT EXISTS command_name(
+        CREATE TABLE IF NOT EXISTS commands(
             uid INTEGER NOT NULL,
             channel_id INTEGER NOT NULL,
-            command_name TEXT NOT NULL,
+            name TEXT NOT NULL,
+            UNIQUE (channel_id, name)
             PRIMARY KEY (`uid`),
-            FOREIGN KEY (`channel_id`) REFERENCES channel(`uid`))
+            FOREIGN KEY (`channel_id`) REFERENCES channels(`uid`))
             """)
 
         cur.execute("""
-        CREATE TABLE IF NOT EXISTS command_links(
+        CREATE TABLE IF NOT EXISTS links(
             uid INTEGER NOT NULL,
-            command_id INTEGER NOT NULL,
-            link TEXT NOT NULL,
+            command_id INTEGER NOT NULL UNIQUE,
+            linktext TEXT NOT NULL,
             PRIMARY KEY (`uid`),
-            FOREIGN KEY (`command_id`) REFERENCES command_name(`uid`))
+            FOREIGN KEY (`command_id`) REFERENCES commands(`uid`))
             """)
         # self.con.commit()
 

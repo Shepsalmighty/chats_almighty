@@ -39,6 +39,7 @@ class TwitchChatView:
         await ready_event.chat.join_room(self.channel)
         # you can do other bot initialization things in here
 
+    #TODO: add "!stupid" and "!smrt" incremental counters for chat
 
     #TODO: add !functions !reply !discord !set etc
     #!set(!example) over writes existing command with channel owners input links etc
@@ -56,7 +57,7 @@ class TwitchChatView:
                 con = sqlite3.connect("twitch_bot.db")
                 cur = con.cursor()
                 channel_uid = cur.execute('SELECT uid FROM channel WHERE channel_name = ?', (self.channel,))
-                command_uid = cur.execute('INSERT INTO command_name (channel_id, command_name) VALUES (?,?) RETURNING (uid)', (channel_uid, args[0][1:]))
+                command_uid = cur.execute('INSERT INTO command_name (channel_id, command) VALUES (?,?) RETURNING (uid)', (channel_uid, args[0][1:]))
                 cur.execute('INSERT INTO command_links (command_uid, link) VALUES (?,?)', (command_uid, args[1]))
                 con.commit()
             # finally:
