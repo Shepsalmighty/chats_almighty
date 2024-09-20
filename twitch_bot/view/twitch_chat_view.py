@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 from os import getenv
 from pathlib import Path
 import sqlite3
-
+from contextlib import closing
 
 
 #TODO: Add a reply if anyone types "sudo !!" of "nice try"
@@ -40,6 +40,7 @@ class TwitchChatView:
         # you can do other bot initialization things in here
 
     #TODO: add "!stupid" and "!smrt" incremental counters for chat
+    #TODO" add "!hug" command
 
     #TODO: add !functions !reply !discord !set etc
     #!set(!example) over writes existing command with channel owners input links etc
@@ -52,16 +53,30 @@ class TwitchChatView:
             #creating a lock to avoid multiple cursor objects accessing the table at once causing issues
             # await self.lock.acquire()
             async with self.lock:
-            # try:
+
                 #creating connection to db and cursor objects
-                con = sqlite3.connect("twitch_bot.db")
-                cur = con.cursor()
-                channel_uid = cur.execute('SELECT uid FROM channel WHERE channel_name = ?', (self.channel,))
-                command_uid = cur.execute('INSERT INTO command_name (channel_id, command) VALUES (?,?) RETURNING (uid)', (channel_uid, args[0][1:]))
-                cur.execute('INSERT INTO command_links (command_uid, link) VALUES (?,?)', (command_uid, args[1]))
-                con.commit()
-            # finally:
-            #     self.lock.release()
+                with closing(sqlite3.connect("twitch_bot.db")) as con:
+                    cur = con.cursor()
+                    try:
+                        if cur.execute('SELECT COUNT (`name`) FROM channels').fetchone()[0] == 0:
+                            cur.execute('INSERT INTO channels (`name`) VALUES (?)', (self.channel,))
+                            con.commit()
+
+                        command_id = cur.execute('''
+                        INSERT OR REPLACE INTO commands (`name`, `channel_id`) 
+                        VALUES (?, (SELECT uid FROM channels WHERE name = ?)) 
+                        RETURNING uid''',
+                                                 (args[0].lstrip("!"), self.channel))
+                        cur.execute('''
+                        INSERT OR REPLACE INTO links (`command_id`, `linktext`) 
+                        VALUES (?, ?)''',
+                                    (command_id.fetchone()[0], args[1],))
+                        con.commit()
+
+                    except sqlite3.Error as e:
+                        print(f'An error occurred: {e}')
+
+
 
             # below checked predefined allowed commands, but as is limiting and in dict switching to full user control of inputs and using sql db
             # elif args[0][1:] in self.allowed_user_values:
@@ -90,23 +105,37 @@ class TwitchChatView:
         # elif len(cmd.parameter) >= 0 and cmd.user.name != self.channel:
         #     await cmd.reply(f"no {cmd.name} link yet")
 
-        """check command in db
-        get link for command if in db
-        print !set reply if cmd not found"""
-        async with self.lock:
-            con = sqlite3.connect("twitch_bot.db")
-            cur = con.cursor()
-            # cmd_exists = cur.execute('SELECT command_name.command_id, command_links.link FROM command_name, command_links WHERE command_name.command_id AND command_links.link IS NOT NULL RETURNING command_links.link')
-            cmd_exists = cur.execute('SELECT link FROM command_links WHERE link IS NOT NULL')
 
-            cmd_link = cmd_exists.fetchone()
-            if cmd_link:
-                await cmd.reply(cmd_link)
-            elif not cmd_link and cmd.user.name == self.channel:
-                await cmd.reply(f"add a link to your {cmd.name} using \"!set !{cmd.name} link\"   ")
-            elif not cmd_link and cmd.user.name != self.channel:
-                await cmd.reply(f"no {cmd.name} link yet")
+        con = sqlite3.connect("twitch_bot.db")
+        cur = con.cursor()
+        command_exists = cur.execute('''SELECT name FROM commands WHERE name = ? 
+                                            AND channel_id = (SELECT uid FROM channels WHERE name = (?))''',
+                                     (cmd.name.lstrip("!"), self.channel)).fetchone()
 
+        if cmd.name.lstrip("!") == command_exists[0]:
+            async with self.lock:
+                # con = sqlite3.connect("twitch_bot.db")
+                # cur = con.cursor()
+
+                link_exists = cur.execute('''SELECT l.linktext FROM links l 
+                                                JOIN commands c ON l.command_id = c.uid 
+                                                JOIN channels ch ON c.channel_id = ch.uid 
+                                                WHERE c.name = (?) AND ch.name = (?)
+                                                ''',
+                                          (command_exists[0], self.channel))
+                print(link_exists)
+
+                cmd_link = link_exists.fetchone()[0]
+                print(cmd_link)
+                '''MOST OR ALL OF THIS NEEDS TO MOVE AS IN THE WRONG FUNCTION (CURRENTLY IN !SET) !!!'''
+                if cmd_link:
+                    await cmd.reply(cmd_link)
+                elif not cmd_link and cmd.user.name == self.channel:
+                    await cmd.reply(f"add a link to your {cmd.name} using \"!set !{cmd.name} link\"   ")
+                elif not cmd_link and cmd.user.name != self.channel:
+                    await cmd.reply(f"no {cmd.name} link yet")
+
+        con.close()
 
 
 
