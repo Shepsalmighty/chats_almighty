@@ -1,4 +1,6 @@
 # INFO code examples from https://pytwitchapi.dev/en/stable/
+from types import NoneType
+
 from twitchAPI.twitch import Twitch
 from twitchAPI.oauth import UserAuthenticator, UserAuthenticationStorageHelper
 from twitchAPI.type import AuthScope, ChatEvent
@@ -10,6 +12,7 @@ from os import getenv
 from pathlib import Path
 import sqlite3
 from contextlib import closing
+
 
 
 #TODO: Add a reply if anyone types "sudo !!" of "nice try"
@@ -28,9 +31,34 @@ class TwitchChatView:
         self.user_values = {}
         self.allowed_user_values = ["youtube", "discord", "github", "today", "schedule"]
         self.lock = asyncio.Lock()
+        # self.con = sqlite3.connect("twitch_bot.db")
+        # self.cur = self.con.cursor()
+
 
     async def on_message(self, msg: ChatMessage):
-        print(f'in {msg.room.name}, {msg.user.name} said: {msg.text}')
+        # print(f'in {msg.room.name}, {msg.user.name} said: {msg.text}')
+
+        if msg.text.startswith("!"):
+            args = msg.text.split(" ", 1)
+            print(args[0])
+            con = sqlite3.connect("twitch_bot.db")
+            cur = con.cursor()
+            command_exists = cur.execute('''SELECT name FROM commands WHERE name = ? 
+                                                                 AND channel_id = (SELECT uid FROM channels WHERE name = (?))''',
+                                         (args[0].lstrip("!"), self.channel)).fetchone()
+            # (msg.text.lstrip("!"), self.channel)).fetchone()
+            print(command_exists)
+            print(msg.text)
+            if command_exists:
+                await self.link_command(msg)
+            if command_exists is None and msg.user.name == self.channel:
+                await msg.reply(f"add a link to your {msg.text} using \"!set !{msg.text.lstrip("!")} link\"   ")
+            elif command_exists is None and msg.user.name != self.channel:
+                await msg.reply(f"no {msg.text} link yet")
+
+            con.close()
+        else: print(f'in {msg.room.name}, {msg.user.name} said: {msg.text}')
+
 
     async def on_ready(self, ready_event: EventData):
         print('Bot is ready for work, joining channels')
@@ -77,66 +105,52 @@ class TwitchChatView:
                         print(f'An error occurred: {e}')
 
 
-
-            # below checked predefined allowed commands, but as is limiting and in dict switching to full user control of inputs and using sql db
-            # elif args[0][1:] in self.allowed_user_values:
-            #     self.user_values[args[0][1:]] = args[1]
-            # args[0][1:] would strip !discord to be discord which is why we're using that
-
-            # elif args[0] == "!discord":
-            #     self.user_values["discord"] = args[1]
-            # elif args[0] == "!youtube":
-            #     self.user_values["youtube"] = args[1]
-            # elif args[0] == "!today":
-            #     self.user_values["today"] = args[1]
-            # elif args[0] == "!github":
-            #     self.user_values["github"] = args[1]
-            # elif args[0] == "!schedule":
-            #     self.user_values["schedule"] = args[1]
-
         else:
            await cmd.reply("you cannot change bot settings")
 
-    async def link_command(self, cmd: ChatCommand):
-        # if cmd.name in self.user_values:
-        #     await cmd.reply(self.user_values.get(cmd.name))
-        # elif len(cmd.parameter) == 0 and cmd.user.name == self.channel:
-        #     await cmd.reply(f"add a link to your {cmd.name} using \"!set !{cmd.name} link\"   ")
-        # elif len(cmd.parameter) >= 0 and cmd.user.name != self.channel:
-        #     await cmd.reply(f"no {cmd.name} link yet")
+    async def link_command(self, cmd: ChatMessage):
+        # if cmd.user.name == self.channel:
+            # self.allowed_user_values.append(cmd.parameter[1])
 
-
+        print("i run")
         con = sqlite3.connect("twitch_bot.db")
         cur = con.cursor()
-        command_exists = cur.execute('''SELECT name FROM commands WHERE name = ? 
-                                            AND channel_id = (SELECT uid FROM channels WHERE name = (?))''',
-                                     (cmd.name.lstrip("!"), self.channel)).fetchone()
+        # command_exists = cur.execute('''SELECT name FROM commands WHERE name = ?
+        #                                      AND channel_id = (SELECT uid FROM channels WHERE name = (?))''',
+        #                               (cmd.name.lstrip("!"), self.channel)).fetchone()
 
-        if cmd.name.lstrip("!") == command_exists[0]:
-            async with self.lock:
-                # con = sqlite3.connect("twitch_bot.db")
-                # cur = con.cursor()
 
-                link_exists = cur.execute('''SELECT l.linktext FROM links l 
-                                                JOIN commands c ON l.command_id = c.uid 
-                                                JOIN channels ch ON c.channel_id = ch.uid 
-                                                WHERE c.name = (?) AND ch.name = (?)
-                                                ''',
-                                          (command_exists[0], self.channel))
-                print(link_exists)
+        #if (cmd.text.lstrip("!") == command_exists[0]):
+        async with self.lock:
+            # con = sqlite3.connect("twitch_bot.db")
+            # cur = con.cursor()
 
-                cmd_link = link_exists.fetchone()[0]
-                print(cmd_link)
-                '''MOST OR ALL OF THIS NEEDS TO MOVE AS IN THE WRONG FUNCTION (CURRENTLY IN !SET) !!!'''
-                if cmd_link:
-                    await cmd.reply(cmd_link)
-                elif not cmd_link and cmd.user.name == self.channel:
-                    await cmd.reply(f"add a link to your {cmd.name} using \"!set !{cmd.name} link\"   ")
-                elif not cmd_link and cmd.user.name != self.channel:
-                    await cmd.reply(f"no {cmd.name} link yet")
+            link_exists = cur.execute('''SELECT l.linktext FROM links l
+                                            JOIN commands c ON l.command_id = c.uid
+                                            JOIN channels ch ON c.channel_id = ch.uid
+                                            WHERE c.name = (?) AND ch.name = (?)
+                                            ''',
+                                      (cmd.text.lstrip("!"), self.channel))
+            #(command_exists[0], self.channel))
+            cmd_link = link_exists.fetchone()[0]
+            print(cmd_link)
+
+
+
+            if cmd_link:
+                await cmd.reply(cmd_link)
+
+                # elif not cmd_link and cmd.user.name == self.channel:
+                #     await cmd.reply(f"add a link to your {cmd.name} using \"!set !{cmd.name} link\"   ")
+                # elif not cmd_link and cmd.user.name != self.channel:
+                #     await cmd.reply(f"no {cmd.name} link yet")
+                # elif not command_exists == None and cmd.user.name == self.channel:
+                #     await cmd.reply(f"add a link to your {cmd.name} using \"!set !{cmd.name} link\"   ")
+                # elif not command_exists == None and cmd.user.name != self.channel:
+                #     await cmd.reply(f"no {cmd.name} link yet")
 
         con.close()
-
+        # return command_exists
 
 
 
@@ -188,10 +202,12 @@ class TwitchChatView:
         # # INFO you must directly register commands and their handlers, this will register the 1st command !reply
         # chat.register_command('reply', test_command)
         chat.register_command('set', self.set_command)
-        for link in self.allowed_user_values:
-            chat.register_command(link, self.link_command)
-        # chat.register_command('discord', self.link_command)
-        # chat.register_command('youtube', self.link_command)
+        #INFO - THIS ONLY WORKS FOR COMMANDS IN SELF.USER_VALUES NEEDS TO BE FIXED
+        # for link in self.allowed_user_values:
+        #     chat.register_command(link, self.link_command)
+
+
+
 
         # we are done with our setup, lets start this bot up!
         chat.start()
