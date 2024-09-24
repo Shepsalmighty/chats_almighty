@@ -28,8 +28,8 @@ class TwitchChatView:
         self.client_secret = client_secret
         self.path = path
         self.channel = target_channel
-        self.user_values = {}
-        self.allowed_user_values = ["youtube", "discord", "github", "today", "schedule"]
+        # self.user_values = {}
+        # self.allowed_user_values = ["youtube", "discord", "github", "today", "schedule"]
         self.lock = asyncio.Lock()
         # self.con = sqlite3.connect("twitch_bot.db")
         # self.cur = self.con.cursor()
@@ -40,18 +40,19 @@ class TwitchChatView:
 
         if msg.text.startswith("!"):
             args = msg.text.split(" ", 1)
-            print(args[0])
+
+            # print(args[0])
             con = sqlite3.connect("twitch_bot.db")
             cur = con.cursor()
-            command_exists = cur.execute('''SELECT name FROM commands WHERE name = ? 
+            command_exists = cur.execute('''SELECT LOWER(name) FROM commands WHERE name = ? 
                                                                  AND channel_id = (SELECT uid FROM channels WHERE name = (?))''',
-                                         (args[0].lstrip("!"), self.channel)).fetchone()
-            # (msg.text.lstrip("!"), self.channel)).fetchone()
-            print(command_exists)
-            print(msg.text)
-            if command_exists:
+                                         (args[0].lstrip("!").lower(), self.channel)).fetchone()
+
+            if args[0] == "!set":
+               pass
+            elif command_exists:
                 await self.link_command(msg)
-            if command_exists is None and msg.user.name == self.channel:
+            elif command_exists is None and msg.user.name == self.channel:
                 await msg.reply(f"add a link to your {msg.text} using \"!set !{msg.text.lstrip("!")} link\"   ")
             elif command_exists is None and msg.user.name != self.channel:
                 await msg.reply(f"no {msg.text} link yet")
@@ -94,7 +95,7 @@ class TwitchChatView:
                         INSERT OR REPLACE INTO commands (`name`, `channel_id`) 
                         VALUES (?, (SELECT uid FROM channels WHERE name = ?)) 
                         RETURNING uid''',
-                                                 (args[0].lstrip("!"), self.channel))
+                                                 (args[0].lstrip("!").lower(), self.channel))
                         cur.execute('''
                         INSERT OR REPLACE INTO links (`command_id`, `linktext`) 
                         VALUES (?, ?)''',
@@ -108,49 +109,53 @@ class TwitchChatView:
         else:
            await cmd.reply("you cannot change bot settings")
 
-    async def link_command(self, cmd: ChatMessage):
+    async def link_command(self, msg: ChatMessage):
         # if cmd.user.name == self.channel:
             # self.allowed_user_values.append(cmd.parameter[1])
 
-        print("i run")
+
         con = sqlite3.connect("twitch_bot.db")
         cur = con.cursor()
-        # command_exists = cur.execute('''SELECT name FROM commands WHERE name = ?
-        #                                      AND channel_id = (SELECT uid FROM channels WHERE name = (?))''',
-        #                               (cmd.name.lstrip("!"), self.channel)).fetchone()
+
+        if msg.text.startswith("!"):
+            args = msg.text.split(" ", 1)
 
 
-        #if (cmd.text.lstrip("!") == command_exists[0]):
-        async with self.lock:
-            # con = sqlite3.connect("twitch_bot.db")
-            # cur = con.cursor()
+            #if (cmd.text.lstrip("!") == command_exists[0]):
+            async with self.lock:
+                # con = sqlite3.connect("twitch_bot.db")
+                # cur = con.cursor()
 
-            link_exists = cur.execute('''SELECT l.linktext FROM links l
-                                            JOIN commands c ON l.command_id = c.uid
-                                            JOIN channels ch ON c.channel_id = ch.uid
-                                            WHERE c.name = (?) AND ch.name = (?)
-                                            ''',
-                                      (cmd.text.lstrip("!"), self.channel))
-            #(command_exists[0], self.channel))
-            cmd_link = link_exists.fetchone()[0]
-            print(cmd_link)
+                link_exists = cur.execute('''SELECT l.linktext FROM links l
+                                                JOIN commands c ON l.command_id = c.uid
+                                                JOIN channels ch ON c.channel_id = ch.uid
+                                                WHERE LOWER(c.name) = (?) AND ch.name = (?)
+                                                ''',
+                                          (args[0].lstrip("!").lower(), self.channel))
+                #(command_exists[0], self.channel))
 
+                cmd_link = link_exists.fetchone()[0]
 
-
-            if cmd_link:
-                await cmd.reply(cmd_link)
-
-                # elif not cmd_link and cmd.user.name == self.channel:
-                #     await cmd.reply(f"add a link to your {cmd.name} using \"!set !{cmd.name} link\"   ")
-                # elif not cmd_link and cmd.user.name != self.channel:
-                #     await cmd.reply(f"no {cmd.name} link yet")
-                # elif not command_exists == None and cmd.user.name == self.channel:
-                #     await cmd.reply(f"add a link to your {cmd.name} using \"!set !{cmd.name} link\"   ")
-                # elif not command_exists == None and cmd.user.name != self.channel:
-                #     await cmd.reply(f"no {cmd.name} link yet")
+                if cmd_link:
+                    await msg.reply(cmd_link)
 
         con.close()
-        # return command_exists
+
+
+        #TODO - REGISTER leavemsg command
+    async def leavemsg(self, msg: ChatMessage):
+        pass
+        args = msg.text.split(" ", 2)
+        if not len(args) == 3:
+            return await msg.reply("it looks like you used this command incorrectly, did you forget your message?")
+
+
+        username, message = args[1], args[2]
+        #TODO - implement regex instead of below
+        if len(args) == 3 and msg.text.startswith("!") and args[0] == "!leavemsg" and args[1].startswith("@"):
+            pass
+    #INFO - CHECK USER EXISTS - https://dev.twitch.tv/docs/api/reference/#get-users
+
 
 
 
@@ -202,9 +207,7 @@ class TwitchChatView:
         # # INFO you must directly register commands and their handlers, this will register the 1st command !reply
         # chat.register_command('reply', test_command)
         chat.register_command('set', self.set_command)
-        #INFO - THIS ONLY WORKS FOR COMMANDS IN SELF.USER_VALUES NEEDS TO BE FIXED
-        # for link in self.allowed_user_values:
-        #     chat.register_command(link, self.link_command)
+
 
 
 
