@@ -1,5 +1,6 @@
 # INFO code examples from https://pytwitchapi.dev/en/stable/
 from types import NoneType
+from urllib.parse import urljoin
 
 from twitchAPI.twitch import Twitch
 from twitchAPI.oauth import UserAuthenticator, UserAuthenticationStorageHelper
@@ -12,6 +13,7 @@ from os import getenv
 from pathlib import Path
 import sqlite3
 from contextlib import closing
+import requests
 
 
 
@@ -48,7 +50,7 @@ class TwitchChatView:
                                                                  AND channel_id = (SELECT uid FROM channels WHERE name = (?))''',
                                          (args[0].lstrip("!").lower(), self.channel)).fetchone()
 
-            if args[0] == "!set":
+            if args[0] == "!set" or args[0] == '!leavemsg':
                pass
             elif command_exists:
                 await self.link_command(msg)
@@ -114,8 +116,8 @@ class TwitchChatView:
             # self.allowed_user_values.append(cmd.parameter[1])
 
 
-        con = sqlite3.connect("twitch_bot.db")
-        cur = con.cursor()
+        # con = sqlite3.connect("twitch_bot.db")
+        # cur = con.cursor()
 
         if msg.text.startswith("!"):
             args = msg.text.split(" ", 1)
@@ -123,28 +125,32 @@ class TwitchChatView:
 
             #if (cmd.text.lstrip("!") == command_exists[0]):
             async with self.lock:
+                with closing(sqlite3.connect("twitch_bot.db")) as con:
                 # con = sqlite3.connect("twitch_bot.db")
-                # cur = con.cursor()
+                    cur = con.cursor()
+                    try:
+                        link_exists = cur.execute('''SELECT l.linktext FROM links l
+                                                        JOIN commands c ON l.command_id = c.uid
+                                                        JOIN channels ch ON c.channel_id = ch.uid
+                                                        WHERE LOWER(c.name) = (?) AND ch.name = (?)
+                                                        ''',
+                                                  (args[0].lstrip("!").lower(), self.channel))
+                        #(command_exists[0], self.channel))
 
-                link_exists = cur.execute('''SELECT l.linktext FROM links l
-                                                JOIN commands c ON l.command_id = c.uid
-                                                JOIN channels ch ON c.channel_id = ch.uid
-                                                WHERE LOWER(c.name) = (?) AND ch.name = (?)
-                                                ''',
-                                          (args[0].lstrip("!").lower(), self.channel))
-                #(command_exists[0], self.channel))
+                        cmd_link = link_exists.fetchone()[0]
 
-                cmd_link = link_exists.fetchone()[0]
+                        if cmd_link:
+                            await msg.reply(cmd_link)
 
-                if cmd_link:
-                    await msg.reply(cmd_link)
+                    except sqlite3.Error as e:
+                        print(f'An error occurred: {e}')
 
-        con.close()
+
 
 
         #TODO - REGISTER leavemsg command
     async def leavemsg(self, msg: ChatMessage):
-        pass
+
         args = msg.text.split(" ", 2)
         if not len(args) == 3:
             return await msg.reply("it looks like you used this command incorrectly, did you forget your message?")
@@ -153,7 +159,27 @@ class TwitchChatView:
         username, message = args[1], args[2]
         #TODO - implement regex instead of below
         if len(args) == 3 and msg.text.startswith("!") and args[0] == "!leavemsg" and args[1].startswith("@"):
-            pass
+            print("we got here")
+            async with self.lock:
+                with closing(sqlite3.connect("twitch_bot.db")) as con:
+                    cur = con.cursor()
+                    # url = "https://api.twitch.tv/helix/users?login="+args[1][1]
+                    # url = "http://localhost/users?login="+args[1][1]
+                    # res = requests.get(url)
+                    try:
+                        if cur.execute('SELECT COUNT (`sender_id`) FROM messages WHERE sender_id = ?',
+                                       (msg.user.name,)).fetchone()[0] < 10:
+
+                            print(f'{msg.user.name}, {args[1][1:]}, {args[2]}')
+                            cur.execute('INSERT INTO messages (`sender_id`, `receiver_id`, `messagetext`) VALUES (?,?,?)',
+                                        (msg.user.name, args[1][1:], args[2]))
+                            con.commit()
+                        else:
+                            await msg.reply("""3 msg limit reached, msgs are deleted after each stream ends or
+                            once delivered""")
+                    except sqlite3.Error as e:
+                        print(f'An error occurred: {e}')
+
     #INFO - CHECK USER EXISTS - https://dev.twitch.tv/docs/api/reference/#get-users
 
 
@@ -207,7 +233,8 @@ class TwitchChatView:
         # # INFO you must directly register commands and their handlers, this will register the 1st command !reply
         # chat.register_command('reply', test_command)
         chat.register_command('set', self.set_command)
-
+        chat.register_command('leavemsg', self.leavemsg)
+#TODO make !help command
 
 
 

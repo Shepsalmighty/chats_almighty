@@ -44,13 +44,15 @@ class DBMigration:
             linktext TEXT NOT NULL,
             FOREIGN KEY (`command_id`) REFERENCES commands(`uid`))
             """)
+
         cur.execute("""
         CREATE TABLE IF NOT EXISTS messages(
             uid INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
             sender_id INTEGER NOT NULL,
             receiver_id INTEGER NOT NULL,
-            messagetext TEXT NOT NULL,      
-        """)
+            messagetext TEXT NOT NULL,   
+            UNIQUE(sender_id, receiver_id)) 
+            """)
 #you need something like ADD CONSTRAINT one_msg_per_pair UNIQUE(sender_id, receiver_id)
 
 

@@ -17,6 +17,15 @@ CREATE TABLE IF NOT EXISTS links(
             linktext TEXT NOT NULL,
             PRIMARY KEY (`uid`),
 			FOREIGN KEY (`command_id`) REFERENCES commands(`uid`));
+
+
+CREATE TABLE IF NOT EXISTS messages(
+            uid INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            sender_id INTEGER NOT NULL,
+            receiver_id INTEGER NOT NULL,
+            messagetext TEXT NOT NULL,
+            UNIQUE(sender_id, receiver_id));
+
 			
 			
 			
@@ -38,10 +47,10 @@ CREATE INDEX IF NOT EXISTS idx_links_command_id ON links(command_id);
 ---------------------------------------------------------------------------------------------------
 
 -- get uid from channel
-SELECT uid FROM channels WHERE name = "test";
+--SELECT uid FROM channels WHERE name = "test";
 
 -- get uid from commmand_name // CHECK COMMAND EXISTS FOR CHANNEL
-SELECT uid FROM commands WHERE name = "test command" AND channel_id  = (SELECT uid FROM channels WHERE name = "test")
+--SELECT uid FROM commands WHERE name = "test command" AND channel_id  = (SELECT uid FROM channels WHERE name = "test")
 
 -- get link from links table where the command id/uid relates 
 --SELECT linktext FROM links WHERE command_id = (SELECT uid from commands WHERE name = "test command" AND channel_id  = (SELECT uid FROM channels WHERE name = "test"))
@@ -51,6 +60,6 @@ SELECT uid FROM commands WHERE name = "test command" AND channel_id  = (SELECT u
 --WHERE c.name = 'test command' AND ch.name = 'test';
 
 --INSERT LINK INTO TABLE (FOR !SET)
-INSERT INTO links (linktext, command_id) VALUES ("test link", (SELECT uid FROM commands WHERE name = "test command"));
+--INSERT INTO links (linktext, command_id) VALUES ("test link", (SELECT uid FROM commands WHERE name = "test command"));
 
-INSERT INTO links VALUES "example link text"; INSERT INTO commands VALUES "command name"; SELECT 
+--INSERT INTO links VALUES "example link text"; INSERT INTO commands VALUES "command name"; SELECT
