@@ -59,8 +59,10 @@ class TwitchChatView:
             elif command_exists is None and msg.user.name != self.channel:
                 await msg.reply(f"no {msg.text} link yet")
 
+
             con.close()
         else: print(f'in {msg.room.name}, {msg.user.name} said: {msg.text}')
+        await self.get_msg(msg)
 
 
     async def on_ready(self, ready_event: EventData):
@@ -72,8 +74,9 @@ class TwitchChatView:
 
     #TODO: add "!stupid" and "!smrt" incremental counters for chat
     #TODO" add "!hug" command
+    #TODO add !lurk
 
-    #TODO: add !functions !reply !discord !set etc
+    #TODO: add !help
     #!set(!example) over writes existing command with channel owners input links etc
     async def set_command(self, cmd: ChatCommand):
         if cmd.user.name == self.channel:
@@ -115,10 +118,6 @@ class TwitchChatView:
         # if cmd.user.name == self.channel:
             # self.allowed_user_values.append(cmd.parameter[1])
 
-
-        # con = sqlite3.connect("twitch_bot.db")
-        # cur = con.cursor()
-
         if msg.text.startswith("!"):
             args = msg.text.split(" ", 1)
 
@@ -135,7 +134,6 @@ class TwitchChatView:
                                                         WHERE LOWER(c.name) = (?) AND ch.name = (?)
                                                         ''',
                                                   (args[0].lstrip("!").lower(), self.channel))
-                        #(command_exists[0], self.channel))
 
                         cmd_link = link_exists.fetchone()[0]
 
@@ -147,8 +145,6 @@ class TwitchChatView:
 
 
 
-
-        #TODO - REGISTER leavemsg command
     async def leavemsg(self, msg: ChatMessage):
 
         args = msg.text.split(" ", 2)
@@ -181,6 +177,42 @@ class TwitchChatView:
                         print(f'An error occurred: {e}')
 
     #INFO - CHECK USER EXISTS - https://dev.twitch.tv/docs/api/reference/#get-users
+
+    async def get_msg(self, msg: ChatMessage):
+
+        async with self.lock:
+            with closing(sqlite3.connect("twitch_bot.db")) as con:
+                cur = con.cursor()
+                # message_count = cur.execute('SELECT COUNT(*) FROM messages WHERE receiver_id = ?', (msg.user.name,))
+                target = cur.execute('SELECT receiver_id FROM messages')
+                users_with_msgs = tuple()
+                for name in target:
+                    users_with_msgs += name
+
+
+                sender_id = cur.execute('SELECT sender_id FROM messages WHERE receiver_id = ?', (msg.user.name,))
+                sender_names = []
+                for name in sender_id:
+                    sender_names.append(name)
+
+                try:
+                    # if msg.user.name.text in stored_msgs:
+                    #     print("get msg working")
+                    # messages = cur.execute('SELECT messagetext, sender_id, uid FROM messages WHERE receiver_id = ?',
+                    #                        (msg.user.name,))
+                    if msg.user.name in users_with_msgs:
+                        await msg.reply(f'you have {len(sender_names)} messages stored from {sender_names}, to get a message use !getmsg @username')
+
+                    # for row in messages:
+
+                        # await msg.reply(f'{row[1]} left you a message: {row[0]}')
+                        # cur.execute('DELETE FROM messages WHERE uid = ?', (row[2],))
+                        # con.commit()
+                    # else: pass
+                except sqlite3.Error as e:
+                        print(f'An error occurred: {e}')
+
+
 
 
 
@@ -234,6 +266,7 @@ class TwitchChatView:
         # chat.register_command('reply', test_command)
         chat.register_command('set', self.set_command)
         chat.register_command('leavemsg', self.leavemsg)
+        chat.register_command('getmsg', self.get_msg)
 #TODO make !help command
 
 
