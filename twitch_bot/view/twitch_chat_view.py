@@ -50,7 +50,7 @@ class TwitchChatView:
                                                                  AND channel_id = (SELECT uid FROM channels WHERE name = (?))''',
                                          (args[0].lstrip("!").lower(), self.channel)).fetchone()
 
-            if args[0] == "!set" or args[0] == '!leavemsg':
+            if args[0] == "!set" or args[0] == '!leavemsg' or args[0] == '!getmsg':
                 pass
             elif command_exists:
                 await self.link_command(msg)
@@ -151,7 +151,6 @@ class TwitchChatView:
         username, message = args[1], args[2]
         # TODO - implement regex instead of below
         if len(args) == 3 and msg.text.startswith("!") and args[0] == "!leavemsg" and args[1].startswith("@"):
-            print("we got here")
             async with self.lock:
                 with closing(sqlite3.connect("twitch_bot.db")) as con:
                     cur = con.cursor()
@@ -160,12 +159,12 @@ class TwitchChatView:
                     # res = requests.get(url)
                     try:
                         if cur.execute('SELECT COUNT (`sender_id`) FROM messages WHERE sender_id = ?',
-                                       (msg.user.name,)).fetchone()[0] < 10:
+                                       (msg.user.name,)).fetchone()[0] < 20:
 
                             print(f'{msg.user.name}, {args[1][1:]}, {args[2]}')
                             cur.execute(
                                 'INSERT INTO messages (`sender_id`, `receiver_id`, `messagetext`) VALUES (?,?,?)',
-                                (msg.user.name, args[1][1:], args[2]))
+                                (msg.user.name, args[1][1:].lower(), args[2]))
                             con.commit()
                         else:
                             await msg.reply("""3 msg limit reached, msgs are deleted after each stream ends or
@@ -186,32 +185,42 @@ class TwitchChatView:
                 for name in target:
                     users_with_msgs.add(name[0])
 
-                sender_names = []
+                sender_names = set()
                 sender_id = cur.execute('SELECT sender_id FROM messages WHERE receiver_id = ?', (msg.user.name,))
-                # after this section you dont need self.lock anymore (the db stuff ends here)
+
                 for name in sender_id:
-                    sender_names.append(name[0])
-        # sender_names = []
-        # for name in sender_id:
-        #     sender_names.append(name)
-        print(users_with_msgs, self.users_notified)
-        if msg.user.name in users_with_msgs and msg.user.name not in self.users_notified:
+                    sender_names.add(name[0])
+
+        args = msg.text.split(" ", 1)
+        # print(users_with_msgs, self.users_notified)
+        if msg.user.name in users_with_msgs and msg.user.name not in self.users_notified and not msg.text.startswith(
+                "!getmsg"):
             await msg.reply(
                 f'you have {len(sender_names)} messages stored from {sender_names}, to get a message use !getmsg @username')
             async with self.notified_lock:
                 self.users_notified.add(msg.user.name)
 
-            args = msg.text.split(" ", 1)
-            if len(args) > 1 and args[1].lstrip("@") not in sender_names:
-                await msg.reply(
-                    f'To get a message use !getmsg @username. You have {len(sender_names)} messages stored from: {sender_names}')
-            else:
-                print("hello world")
 
-            # messages = cur.execute('SELECT messagetext, sender_id, uid FROM messages WHERE receiver_id = ?',
-            #                        (msg.user.name,))
+        elif msg.user.name in users_with_msgs and len(args) == 1 and args[1].lstrip(
+                "@") not in sender_names:  and msg.user.name not in self.users_notified:
+            await msg.reply(
+                f'To get a message use !getmsg @username. You have {len(sender_names)} messages stored from: {sender_names}')
 
-            # for row in messages:
+        elif len(args) > 1 and args[1].lstrip("@").lower() in sender_names:
+            user_name = str(msg.user.name)
+            async with self.lock:
+                with closing(sqlite3.connect("twitch_bot.db")) as con:
+                    cur = con.cursor()
+                    messages = cur.execute(
+                        'SELECT messagetext, uid FROM messages WHERE receiver_id = ? AND sender_id = ? ORDER BY uid ASC',
+                        (user_name.lower(), args[1].lstrip("@").lower())).fetchall()
+                    for msgs in messages:
+                        await msg.reply(f"From {args[1]}: {msgs[0]}")
+                        cur.execute('DELETE FROM messages WHERE uid = ?', (msgs[1],))  # (messages[1],)
+                    sender_names.remove(args[1].lstrip("@").lower())
+                    con.commit()
+
+                # for row in messages:
 
             # await msg.reply(f'{row[1]} left you a message: {row[0]}')
             # cur.execute('DELETE FROM messages WHERE uid = ?', (row[2],))
