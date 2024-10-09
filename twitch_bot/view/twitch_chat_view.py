@@ -63,7 +63,7 @@ class TwitchChatView:
             con.close()
         else:
             print(f'in {msg.room.name}, {msg.user.name} said: {msg.text}')
-        await self.get_msg(msg)
+        await self.get_msg(msg), await self.notify_user(msg)
 
     async def on_ready(self, ready_event: EventData):
         print('Bot is ready for work, joining channels')
@@ -115,8 +115,6 @@ class TwitchChatView:
             await cmd.reply("you cannot change bot settings")
 
     async def link_command(self, msg: ChatMessage):
-        # if cmd.user.name == self.channel:
-        # self.allowed_user_values.append(cmd.parameter[1])
 
         if msg.text.startswith("!"):
             args = msg.text.split(" ", 1)
@@ -150,7 +148,8 @@ class TwitchChatView:
 
         username, message = args[1], args[2]
         # TODO - implement regex instead of below
-        if len(args) == 3 and msg.text.startswith("!") and args[0] == "!leavemsg" and args[1].startswith("@"):
+        if len(args) == 3 and msg.text.startswith("!") and args[0] == "!leavemsg" and args[1].startswith("@") and args[
+            1] != msg.user.name:
             async with self.lock:
                 with closing(sqlite3.connect("twitch_bot.db")) as con:
                     cur = con.cursor()
@@ -159,7 +158,7 @@ class TwitchChatView:
                     # res = requests.get(url)
                     try:
                         if cur.execute('SELECT COUNT (`sender_id`) FROM messages WHERE sender_id = ?',
-                                       (msg.user.name,)).fetchone()[0] < 20:
+                                       (msg.user.name,)).fetchone()[0] < 3:
 
                             print(f'{msg.user.name}, {args[1][1:]}, {args[2]}')
                             cur.execute(
@@ -173,6 +172,57 @@ class TwitchChatView:
                         print(f'An error occurred: {e}')
 
     # INFO - CHECK USER EXISTS - https://dev.twitch.tv/docs/api/reference/#get-users
+    async def notify_user(self, msg: ChatMessage):
+        async with self.lock:
+            with closing(sqlite3.connect("twitch_bot.db")) as con:
+                cur = con.cursor()
+                # message_count = cur.execute('SELECT COUNT(*) sender_id FROM messages WHERE receiver_id = ?',
+                #                             (msg.user.name,))
+                # messages_in_db = cur.execute('SELECT sender_id, messagetext FROM messages WHERE receiver_id = ?',
+                # (msg.user.name,)).fetchall()
+                user_msgs_count = cur.execute('SELECT COUNT(sender_id), sender_id '
+                                              'FROM messages '
+                                              'WHERE receiver_id = ? '
+                                              'GROUP BY sender_id',
+                                              (msg.user.name,)).fetchall()
+
+                # target = cur.execute('SELECT receiver_id FROM messages')
+                # users_with_msgs = set()
+                # for name in target:
+                #     users_with_msgs.add(name[0])
+                #     # for name_count in message_count:
+                #     #     name_count.add(users_with_msgs)
+                #
+                # sender_names = set()
+                # sender_id = cur.execute('SELECT sender_id FROM messages WHERE receiver_id = ?', (msg.user.name,))
+                #
+                # for name in sender_id:
+                #     sender_names.add(name[0])
+
+        args = msg.text.split(" ", 1)
+
+        # if msg.user.name in users_with_msgs and msg.user.name not in self.users_notified and not msg.text.startswith(
+        #         "!getmsg"):
+        #     await msg.reply(
+        #         f'you have {len(sender_names)} messages stored from {sender_names}, to get a message use !getmsg @username')
+        #     async with self.notified_lock:
+        #         self.users_notified.add(msg.user.name)
+        if len(user_msgs_count) > 0 and not msg.text.startswith("!getmsg") and msg.user.name not in self.users_notified:
+            await msg.reply(
+                "you have messages stored from: " +
+                ", ".join(f"@{user} ({count}) " for count, user in user_msgs_count) +
+                "to get a message use !getmsg @username")
+
+            async with self.notified_lock:
+                self.users_notified.add(msg.user.name)
+
+        # elif msg.user.name in users_with_msgs and len(args) == 1:
+        #     await msg.reply(
+        #         f'To get a message use !getmsg @username. You have {len(sender_names)} messages stored from: {sender_names}')
+        elif len(user_msgs_count) > 0 and len(args) == 1 and args[0] == "!getmsg":
+            await msg.reply(
+                "To get a message use !getmsg @username. You have messages stored from: " +
+                ", ".join(f"@{user} ({count}), " for count, user in user_msgs_count))
 
     async def get_msg(self, msg: ChatMessage):
 
@@ -192,21 +242,8 @@ class TwitchChatView:
                     sender_names.add(name[0])
 
         args = msg.text.split(" ", 1)
-        # print(users_with_msgs, self.users_notified)
-        if msg.user.name in users_with_msgs and msg.user.name not in self.users_notified and not msg.text.startswith(
-                "!getmsg"):
-            await msg.reply(
-                f'you have {len(sender_names)} messages stored from {sender_names}, to get a message use !getmsg @username')
-            async with self.notified_lock:
-                self.users_notified.add(msg.user.name)
 
-
-        elif msg.user.name in users_with_msgs and len(args) == 1 and args[1].lstrip(
-                "@") not in sender_names:  and msg.user.name not in self.users_notified:
-            await msg.reply(
-                f'To get a message use !getmsg @username. You have {len(sender_names)} messages stored from: {sender_names}')
-
-        elif len(args) > 1 and args[1].lstrip("@").lower() in sender_names:
+        if len(args) > 1 and args[1].lstrip("@").lower() in sender_names:
             user_name = str(msg.user.name)
             async with self.lock:
                 with closing(sqlite3.connect("twitch_bot.db")) as con:
