@@ -66,7 +66,6 @@ class TwitchChatView:
             elif command_exists is None and msg.user.name != self.channel:
                 await msg.reply(f"no {msg.text} link yet")
 
-
         else:
             print(f'in {msg.room.name}, {msg.user.name} said: {msg.text}')
         await self.get_msg(msg), await self.notify_user(msg)
@@ -214,39 +213,14 @@ class TwitchChatView:
                 ", ".join(f"@{user} ({count})" for count, user in user_msgs_count))
 
     async def get_msg(self, msg: ChatMessage):
-        # await msg.reply()
-        await msg.reply(await self.db.get_message(msg))
-        # async with self.lock:
-        #     # INFO get_message() in MODEL
-        #     with closing(sqlite3.connect("twitch_bot.db")) as con:
-        #         cur = con.cursor()
-        #         target = cur.execute('SELECT receiver_id FROM messages')
-        #         users_with_msgs = set()
-        #         for name in target:
-        #             users_with_msgs.add(name[0])
-        #
-        #         sender_names = set()
-        #         sender_id = cur.execute('SELECT sender_id FROM messages WHERE receiver_id = ?', (msg.user.name,))
-        #
-        #         for name in sender_id:
-        #             sender_names.add(name[0])
-        #
-        # args = msg.text.split(" ", 1)
-        #
-        # if len(args) > 1 and args[1].lstrip("@").lower() in sender_names:
-        #     user_name = str(msg.user.name)
-        #     async with self.lock:
-        #         with closing(sqlite3.connect("twitch_bot.db")) as con:
-        #             cur = con.cursor()
-        #             messages = cur.execute(
-        #                 'SELECT messagetext, uid FROM messages WHERE receiver_id = ? AND sender_id = ? ORDER BY uid ASC',
-        #                 (user_name.lower(), args[1].lstrip("@").lower())).fetchall()
-        #             for msgs in messages:
-        #                 await msg.reply(f"From {args[1]}: {msgs[0]}")
-        #                 cur.execute('DELETE FROM messages WHERE uid = ?', (msgs[1],))  # (messages[1],)
-        #             sender_names.remove(args[1].lstrip("@").lower())
-        #             con.commit()
-        # INFO get_message() in MODEL
+        """send msg to db.get_message function
+                    check database for sender and reciever
+                    if message(s) exists we send that back here
+                    and msg.reply with the message from the sender
+                    then delete the entry from the database """
+        args = msg.text.split(" ", 1)
+        for msgs in await self.db.get_message(msg):
+            await msg.reply(msgs)
 
     # TODO: add some tests
 

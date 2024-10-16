@@ -91,11 +91,12 @@ class DataBaseInterface:
                 try:
                     if cur.execute('SELECT COUNT (`sender_id`) FROM messages WHERE sender_id = ?',
                                    (msg.user.name,)).fetchone()[0] < 3:
-                        print(f'{msg.user.name}, {args[1][1:]}, {args[2]}')
+                        # print(f'{msg.user.name}, {args[1][1:]}, {args[2]}')
                         cur.execute(
                             'INSERT INTO messages (`sender_id`, `receiver_id`, `messagetext`) VALUES (?,?,?)',
                             (msg.user.name, args[1][1:].lower(), args[2]))
                         con.commit()
+
                 except sqlite3.Error as e:
                     print(f'An error occurred: {e}')
 
@@ -127,18 +128,19 @@ class DataBaseInterface:
                     sender_names.add(name[0])
 
                 args = msg.text.split(" ", 1)
+                msg_list = []
 
                 if len(args) > 1 and args[1].lstrip("@").lower() in sender_names:
                     user_name = str(msg.user.name)
-                    async with self.lock:
+                    messages = cur.execute(
+                        'SELECT messagetext, uid FROM messages WHERE receiver_id = ? AND sender_id = ? ORDER BY uid ASC',
+                        (user_name.lower(), args[1].lstrip("@").lower())).fetchall()
 
-                        with closing(sqlite3.connect("twitch_bot.db")) as con:
-                            cur = con.cursor()
-                            messages = cur.execute(
-                                'SELECT messagetext, uid FROM messages WHERE receiver_id = ? AND sender_id = ? ORDER BY uid ASC',
-                                (user_name.lower(), args[1].lstrip("@").lower())).fetchall()
-                            for msgs in messages:
-                                await msg.reply(f"From {args[1]}: {msgs[0]}")
-                                cur.execute('DELETE FROM messages WHERE uid = ?', (msgs[1],))  # (messages[1],)
-                            sender_names.remove(args[1].lstrip("@").lower())
-                            con.commit()
+                    for msgs in messages:
+                        #
+                        msg_list.append(f"From {args[1]}: {msgs[0]}")
+                        # await msg.reply(f"From {args[1]}: {msgs[0]}")
+                        cur.execute('DELETE FROM messages WHERE uid = ?', (msgs[1],))  # (messages[1],)
+                    sender_names.remove(args[1].lstrip("@").lower())
+                    con.commit()
+                return msg_list
