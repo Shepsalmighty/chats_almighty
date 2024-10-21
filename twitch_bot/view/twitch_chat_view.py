@@ -29,13 +29,8 @@ class TwitchChatView:
         self.client_secret = client_secret
         self.path = path
         self.channel = target_channel
-        # self.user_values = {}
-        # self.allowed_user_values = ["youtube", "discord", "github", "today", "schedule"]
         self.lock = asyncio.Lock()
-        # self.con = sqlite3.connect("twitch_bot.db")
-        # self.cur = self.con.cursor()
         self.users_notified = set()
-        # notified_lock = new lock for interacting with self.users_notified dict
         self.notified_lock = asyncio.Lock()
         self.db = DB(self.channel, "twitch_bot.db")
 
@@ -43,16 +38,6 @@ class TwitchChatView:
 
         if msg.text.startswith("!"):
             args = msg.text.split(" ", 1)
-            # database_interface.DataBaseInterface.command_exists(args)
-
-            # # INFO command_exists() -- MODEL
-            # con = sqlite3.connect("twitch_bot.db")
-            # cur = con.cursor()
-            # command_exists = cur.execute('''SELECT LOWER(name) FROM commands WHERE name = ?
-            #                                                      AND channel_id = (SELECT uid FROM channels WHERE name = (?))''',
-            #                              (args[0].lstrip("!").lower(), self.channel)).fetchone()
-            # con.close()
-            # # INFO command_exists() -- MODEL
 
             command_exists = await self.db.command_exists(msg)
 
@@ -92,27 +77,6 @@ class TwitchChatView:
             # creating a lock to avoid multiple cursor objects accessing the table at once causing issues
             # INFO MOVE TO MODEL
             await self.db.set_command(cmd)
-            # async with self.lock:
-            #     with closing(sqlite3.connect("twitch_bot.db")) as con:
-            #         cur = con.cursor()
-            #         try:
-            #             if cur.execute('SELECT COUNT (`name`) FROM channels').fetchone()[0] == 0:
-            #                 cur.execute('INSERT INTO channels (`name`) VALUES (?)', (self.channel,))
-            #                 con.commit()
-            #
-            #             command_id = cur.execute('''
-            #             INSERT OR REPLACE INTO commands (`name`, `channel_id`)
-            #             VALUES (?, (SELECT uid FROM channels WHERE name = ?))
-            #             RETURNING uid''',
-            #                                      (args[0].lstrip("!").lower(), self.channel))
-            #             cur.execute('''
-            #             INSERT OR REPLACE INTO links (`command_id`, `linktext`)
-            #             VALUES (?, ?)''',
-            #                         (command_id.fetchone()[0], args[1],))
-            #             con.commit()
-            #         # INFO model
-            #         except sqlite3.Error as e:
-            #             print(f'An error occurred: {e}')
 
 
         else:
@@ -124,29 +88,6 @@ class TwitchChatView:
         if msg.text.startswith("!"):
             # args = msg.text.split(" ", 1)
             await self.db.get_link(msg)
-
-            # # if (cmd.text.lstrip("!") == command_exists[0]):
-            # async with self.lock:
-            #     # INFO set_command() in MODEL
-            #     with closing(sqlite3.connect("twitch_bot.db")) as con:
-            #         # con = sqlite3.connect("twitch_bot.db")
-            #         cur = con.cursor()
-            #         try:
-            #             link_exists = cur.execute('''SELECT l.linktext FROM links l
-            #                                             JOIN commands c ON l.command_id = c.uid
-            #                                             JOIN channels ch ON c.channel_id = ch.uid
-            #                                             WHERE LOWER(c.name) = (?) AND ch.name = (?)
-            #                                             ''',
-            #                                       (args[0].lstrip("!").lower(), self.channel))
-            #
-            #             cmd_link = link_exists.fetchone()[0]
-            #             # INFO set_command() in MODEL
-            #
-            #             if cmd_link:
-            #                 await msg.reply(cmd_link)
-            #
-            #         except sqlite3.Error as e:
-            #             print(f'An error occurred: {e}')
 
     async def leavemsg(self, msg: ChatMessage):
 
@@ -185,17 +126,7 @@ class TwitchChatView:
     # INFO - CHECK USER EXISTS - https://dev.twitch.tv/docs/api/reference/#get-users
     async def notify_user(self, msg: ChatMessage):
         user_msgs_count = await self.db.notify(msg)
-        # async with self.lock:
-        #     # INFO notify() in MODEL
-        #     with closing(sqlite3.connect("twitch_bot.db")) as con:
-        #         cur = con.cursor()
-        #
-        #         user_msgs_count = cur.execute('SELECT COUNT(sender_id), sender_id '
-        #                                       'FROM messages '
-        #                                       'WHERE receiver_id = ? '
-        #                                       'GROUP BY sender_id',
-        #                                       (msg.user.name,)).fetchall()
-        # INFO notify() in MODEL
+
         args = msg.text.split(" ", 1)
 
         if len(user_msgs_count) > 0 and not msg.text.startswith("!getmsg") and msg.user.name not in self.users_notified:
