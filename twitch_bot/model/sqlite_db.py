@@ -1,21 +1,17 @@
 import sqlite3
 
 
-
-
 class DBMigration:
     # INFO: create cursor object to interact with db tables e.g in create_tables
     # cur = self.con.cursor()
 
-    def __init__(self):
+    def __init__(self, file_path):
         # connect to db
-        self.con = sqlite3.connect("twitch_bot.db")
-
-
+        self.con = sqlite3.connect(file_path)
 
     def create_tables(self):
-        #INFO: traq reference db https://pastebin.com/enCacTuk
-        #INFO: sqlite data types https://sqlite.org/datatype3.html
+        # INFO: traq reference db https://pastebin.com/enCacTuk
+        # INFO: sqlite data types https://sqlite.org/datatype3.html
 
         # INFO: create cursor object to interact with db tables
         # cur = self.con.cursor()
@@ -53,8 +49,7 @@ class DBMigration:
             messagetext TEXT NOT NULL,   
             UNIQUE(sender_id, receiver_id)) 
             """)
-#you need something like ADD CONSTRAINT one_msg_per_pair UNIQUE(sender_id, receiver_id)
-
+        # you need something like ADD CONSTRAINT one_msg_per_pair UNIQUE(sender_id, receiver_id)
 
         # create index links for tables for more performant queries
         # index for channels table
@@ -63,10 +58,8 @@ class DBMigration:
         # index for the commands table
         cur.execute("""CREATE INDEX IF NOT EXISTS idx_commands_name_channel_id ON commands(name, channel_id)""")
 
-        #index for the links table
+        # index for the links table
         cur.execute("""CREATE INDEX IF NOT EXISTS idx_links_command_id ON links(command_id)""")
-
-
 
         # self.con.commit()
 
@@ -74,11 +67,6 @@ class DBMigration:
         # cur.execute("INSERT INTO commands (channel_id, name) VALUES ((SELECT uid FROM channels WHERE name = \"test\"), \"test command\")")
         # cur.execute("INSERT INTO links (linktext, command_id) VALUES (\"test link\", (SELECT uid FROM commands WHERE name = \"test command\" AND channels_id = (SELECT name from channels WHERE name = \"test\"))")
 
+
 if __name__ == "__main__":
-
     DBMigration().create_tables()
-
-
-
-
-

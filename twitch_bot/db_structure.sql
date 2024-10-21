@@ -26,6 +26,25 @@ CREATE TABLE IF NOT EXISTS messages(
             messagetext TEXT NOT NULL,
             UNIQUE(sender_id, receiver_id));
 
+
+CREATE TABLE IF NOT EXISTS messages(
+            uid INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            sender_id INTEGER NOT NULL,
+            receiver_id INTEGER NOT NULL,
+            messagetext TEXT NOT NULL,
+            UNIQUE(sender_id, receiver_id));
+
+
+        -- create index links for tables for more performant queries
+        -- index for channels table
+        CREATE INDEX IF NOT EXISTS idx_channels_name ON channels(name);
+
+        -- index for the commands table
+        CREATE INDEX IF NOT EXISTS idx_commands_name_channel_id ON commands(name, channel_id);
+
+        --index for the links table
+        CREATE INDEX IF NOT EXISTS idx_links_command_id ON links(command_id);
+
 			
 			
 			

@@ -37,7 +37,7 @@ class TwitchChatView:
         self.users_notified = set()
         # notified_lock = new lock for interacting with self.users_notified dict
         self.notified_lock = asyncio.Lock()
-        self.db = DB(self.channel)
+        self.db = DB(self.channel, "twitch_bot.db")
 
     async def on_message(self, msg: ChatMessage):
 

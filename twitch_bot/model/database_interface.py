@@ -15,19 +15,20 @@ from contextlib import closing
 #
 class DataBaseInterface:
 
-    def __init__(self, target_channel):
+    def __init__(self, target_channel, file_path):
         self.lock = asyncio.Lock()
         self.channel = target_channel
+        self.db_path = file_path
 
     async def command_exists(self, msg):
         args = msg.text.split(" ", 1)
 
         async with self.lock:
-            with closing(sqlite3.connect("twitch_bot.db")) as con:
+            with closing(sqlite3.connect(self.db_path)) as con:
                 # if msg.text.startswith("!"):
                 #     args = msg.text.split(" ", 1)
 
-                con = sqlite3.connect("twitch_bot.db")
+                con = sqlite3.connect(self.db_path)
                 cur = con.cursor()
                 command_exists = cur.execute('''SELECT LOWER(name) FROM commands WHERE name = ?
                                                         AND channel_id = (SELECT uid FROM channels WHERE name = (?))''',
@@ -37,7 +38,7 @@ class DataBaseInterface:
     async def set_command(self, cmd):
         args = cmd.parameter.split(" ", 1)
         async with self.lock:
-            with closing(sqlite3.connect("twitch_bot.db")) as con:
+            with closing(sqlite3.connect(self.db_path)) as con:
                 cur = con.cursor()
                 try:
                     if cur.execute('SELECT COUNT (`name`) FROM channels').fetchone()[0] == 0:
@@ -62,7 +63,7 @@ class DataBaseInterface:
         args = msg.text.split(" ", 1)
 
         async with self.lock:
-            with closing(sqlite3.connect("twitch_bot.db")) as con:
+            with closing(sqlite3.connect(self.db_path)) as con:
                 cur = con.cursor()
                 try:
                     link_exists = cur.execute('''SELECT l.linktext FROM links l
@@ -83,7 +84,7 @@ class DataBaseInterface:
     async def leave_message(self, msg):
         args = msg.text.split(" ", 2)
         async with self.lock:
-            with closing(sqlite3.connect("twitch_bot.db")) as con:
+            with closing(sqlite3.connect(self.db_path)) as con:
                 cur = con.cursor()
                 # url = "https://api.twitch.tv/helix/users?login="+args[1][1]
                 # url = "http://localhost/users?login="+args[1][1]
@@ -102,7 +103,7 @@ class DataBaseInterface:
 
     async def notify(self, msg):
         async with self.lock:
-            with closing(sqlite3.connect("twitch_bot.db")) as con:
+            with closing(sqlite3.connect(self.db_path)) as con:
                 cur = con.cursor()
 
                 user_msgs_count = cur.execute('SELECT COUNT(sender_id), sender_id '
@@ -114,7 +115,7 @@ class DataBaseInterface:
 
     async def get_message(self, msg):
         async with self.lock:
-            with closing(sqlite3.connect("twitch_bot.db")) as con:
+            with closing(sqlite3.connect(self.db_path)) as con:
                 cur = con.cursor()
                 target = cur.execute('SELECT receiver_id FROM messages')
                 users_with_msgs = set()
