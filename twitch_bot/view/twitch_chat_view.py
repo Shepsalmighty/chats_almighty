@@ -1,20 +1,10 @@
 # INFO code examples from https://pytwitchapi.dev/en/stable/
-from types import NoneType
-from urllib.parse import urljoin
 
-from twitchAPI.twitch import Twitch
-from twitchAPI.oauth import UserAuthenticator, UserAuthenticationStorageHelper
-from twitchAPI.type import AuthScope, ChatEvent
-from twitchAPI.chat import Chat, EventData, ChatMessage, ChatSub, ChatCommand
-from twitchAPI.chat.middleware import StreamerOnly
 import asyncio
-from dotenv import load_dotenv
-from os import getenv
-from pathlib import Path
-import sqlite3
-from contextlib import closing
-import requests
-import time
+from twitchAPI.chat import Chat, EventData, ChatMessage, ChatCommand
+from twitchAPI.oauth import UserAuthenticationStorageHelper
+from twitchAPI.twitch import Twitch
+from twitchAPI.type import AuthScope, ChatEvent
 from twitch_bot.model.database_interface import DataBaseInterface as DB
 
 
@@ -74,8 +64,6 @@ class TwitchChatView:
             if len(args) < 2:
                 await cmd.reply("command set incorrectly, did you forget to add the link?")
 
-            # creating a lock to avoid multiple cursor objects accessing the table at once causing issues
-            # INFO MOVE TO MODEL
             await self.db.set_command(cmd)
 
 
