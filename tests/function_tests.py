@@ -19,25 +19,29 @@ class Test_ChatMessage:
     text: str
     user: MyTestChatUser
 
-    def reply(self, txt):
+    async def reply(self, txt):
         pass
 
 
 @dataclass
 class Test_Cmd(Test_ChatMessage):
-    parameter: str
+    # parameter: str
+    @property
+    def parameter(self):
+        print(f"\n\n Test_command: {self.text[:], self.text.split(maxsplit=1)[1], self.text}")
+        return self.text.split(maxsplit=1)[1]
+    # def __init__(self, text, user):
+    #     super().__init__(text, user)
+    #     # self.parameter = self.text
+    #     self.parameter = self.text.split(maxsplit=1)[1]
+    #     # self.user.name = user
 
-    def __init__(self, text, user):
-        super().__init__(text, user)
-        self.parameter = self.text
 
-    # INFO @pytest.mark.asyncio lets us use pytest with async
-
-
+# INFO @pytest.mark.asyncio lets us use pytest with async
 @pytest.mark.asyncio
 async def test_getmsg(test_db):
     # Arrange
-    sut = DataBaseInterface(target_channel="test_channel", file_path=test_db)
+    sut = DataBaseInterface(target_channel="target_channel", file_path=test_db)
 
     # creating user: test_user
     test_user = MyTestChatUser("test_user")
@@ -72,17 +76,30 @@ async def test_getmsg(test_db):
 
 
 @pytest.mark.asyncio
-async def test_leavemsg(test_db):
+@pytest.mark.parametrize(
+    "sender, receiver, msg_text, channel",
+    [
+        ("test_user", "sheps", "!leavemsg @sheps test message", "test_channel"),
+        ("test_user", "sheps", "!leavemsg @SHEPS test message", "test_channel"),
+
+    ]
+)
+async def test_leavemsg(test_db, sender, receiver, msg_text, channel):
     # Arrange
-    sut = DataBaseInterface(target_channel="test_channel", file_path=test_db)
+    # sut = DataBaseInterface(target_channel="test_channel", file_path=test_db)
+    sut = DataBaseInterface(target_channel=channel, file_path=test_db)
 
     # user: test_user leaves a message for sheps
-    test_user = MyTestChatUser("test_user")
-    test_msg = Test_ChatMessage("!leavemsg @sheps test message", test_user)
+    test_user = MyTestChatUser(sender)
+    test_msg = Test_ChatMessage(msg_text, test_user)
+    # test_user = MyTestChatUser("test_user")
+    # test_msg = Test_ChatMessage("!leavemsg @sheps test message", test_user)
 
     # user: sheps retrieves a message from test_user
-    test_receiver = MyTestChatUser("sheps")
+    test_receiver = MyTestChatUser(receiver)
     get_message = Test_ChatMessage("!getmsg @test_user", test_receiver)
+    # test_receiver = MyTestChatUser("sheps")
+    # get_message = Test_ChatMessage("!getmsg @test_user", test_receiver)
 
     # user: no_msgs tries to retrieve messages when they have none
     user_no_msgs = MyTestChatUser("no_msgs")
@@ -130,23 +147,26 @@ async def test_notify_user(test_db):
     assert len(notify_user_no_msgs) == 0
 
 
-# TODO add tests for link_command // set_command
-
 @pytest.mark.asyncio
 async def test_set_command(test_db):
     # Arrange
-    sut = DataBaseInterface(target_channel="test_channel", file_path=test_db)
+    sut = DataBaseInterface(target_channel="target_channel", file_path=test_db)
 
-    # user: test_user leaves a message for sheps
-    test_user = MyTestChatUser("test_channel")
+    # user: test_user sets their discord command to return "test message"
+    test_user = MyTestChatUser("target_channel")
     test_msg = Test_Cmd(text="!set !discord test message", user=test_user)
 
+    # Action
+    # channel user sets discord to be "test message"
+    await sut.set_command(test_msg)
+    # someone in chat calls !discord
     command_call = Test_ChatMessage(text="!discord", user=test_user)
 
-    # Action
-    await sut.set_command(test_msg)
     command_exists = await sut.get_link(command_call)
 
     # Assert
+    assert command_exists == "test message"
 
-    assert command_exists[1] == "test message"
+# TODO add tests for link_command
+# @pytest.mark.asyncio
+# async def test_linkcmd(test_db):
