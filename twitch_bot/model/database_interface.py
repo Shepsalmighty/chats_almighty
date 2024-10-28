@@ -30,6 +30,7 @@ class DataBaseInterface:
 
     async def set_command(self, cmd):
         args = cmd.parameter.split(" ", 1)
+
         async with self.lock:
             with closing(sqlite3.connect(self.db_path)) as con:
                 cur = con.cursor()
@@ -70,6 +71,7 @@ class DataBaseInterface:
                     # INFO set_command() in MODEL
 
                     await msg.reply(cmd_link)
+                    return cmd_link
 
                 except sqlite3.Error as e:
                     print(f'An error occurred: {e}')
