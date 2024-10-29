@@ -55,26 +55,28 @@ class DataBaseInterface:
 
     async def get_link(self, msg):
         args = msg.text.split(" ", 1)
+        if len(args) < 2:
+            await msg.reply("command set incorrectly, did you forget to add the link?")
+        else:
+            async with self.lock:
+                with closing(sqlite3.connect(self.db_path)) as con:
+                    cur = con.cursor()
+                    try:
+                        link_exists = cur.execute('''SELECT l.linktext FROM links l
+                                                                    JOIN commands c ON l.command_id = c.uid
+                                                                    JOIN channels ch ON c.channel_id = ch.uid
+                                                                    WHERE LOWER(c.name) = (?) AND ch.name = (?)
+                                                                    ''',
+                                                  (args[0].lstrip("!").lower(), self.channel))
 
-        async with self.lock:
-            with closing(sqlite3.connect(self.db_path)) as con:
-                cur = con.cursor()
-                try:
-                    link_exists = cur.execute('''SELECT l.linktext FROM links l
-                                                                JOIN commands c ON l.command_id = c.uid
-                                                                JOIN channels ch ON c.channel_id = ch.uid
-                                                                WHERE LOWER(c.name) = (?) AND ch.name = (?)
-                                                                ''',
-                                              (args[0].lstrip("!").lower(), self.channel))
+                        cmd_link = link_exists.fetchone()[0]
+                        # INFO set_command() in MODEL
 
-                    cmd_link = link_exists.fetchone()[0]
-                    # INFO set_command() in MODEL
+                        await msg.reply(cmd_link)
+                        return cmd_link
 
-                    await msg.reply(cmd_link)
-                    return cmd_link
-
-                except sqlite3.Error as e:
-                    print(f'An error occurred: {e}')
+                    except sqlite3.Error as e:
+                        print(f'An error occurred: {e}')
 
     async def leave_message(self, msg):
         args = msg.text.split(" ", 2)
@@ -86,7 +88,7 @@ class DataBaseInterface:
                 # res = requests.get(url)
                 try:
                     if cur.execute('SELECT COUNT (`sender_id`) FROM messages WHERE sender_id = ?',
-                                   (msg.user.name,)).fetchone()[0] < 3:
+                                   (msg.user.name,)).fetchone()[0] < 20:
                         # print(f'{msg.user.name}, {args[1][1:]}, {args[2]}')
                         cur.execute(
                             'INSERT INTO messages (`sender_id`, `receiver_id`, `messagetext`) VALUES (?,?,?)',
@@ -109,6 +111,7 @@ class DataBaseInterface:
                 return user_msgs_count
 
     async def get_message(self, msg):
+        # if msg.text.startswith("!getmsg")
         async with self.lock:
             with closing(sqlite3.connect(self.db_path)) as con:
                 cur = con.cursor()

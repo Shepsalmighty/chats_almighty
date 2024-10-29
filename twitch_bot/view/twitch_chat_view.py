@@ -31,8 +31,10 @@ class TwitchChatView:
 
             command_exists = await self.db.command_exists(msg)
 
-            if args[0] == "!set" or args[0] == '!leavemsg' or args[0] == '!getmsg':
+            if args[0] == "!set" or args[0] == '!leavemsg':
                 pass
+            elif args[0] == "!getmsg":
+                await self.get_msg(msg)
             elif command_exists:
                 await self.link_command(msg)
             elif command_exists is None and msg.user.name == self.channel:
@@ -43,7 +45,7 @@ class TwitchChatView:
 
         else:
             print(f'in {msg.room.name}, {msg.user.name} said: {msg.text}')
-        await self.get_msg(msg), await self.notify_user(msg)
+        await self.notify_user(msg)
 
     async def on_ready(self, ready_event: EventData):
         print('Bot is ready for work, joining channels')
