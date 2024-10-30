@@ -6,6 +6,8 @@ from twitchAPI.oauth import UserAuthenticationStorageHelper
 from twitchAPI.twitch import Twitch
 from twitchAPI.type import AuthScope, ChatEvent
 from twitch_bot.model.database_interface import DataBaseInterface as DB
+import requests
+from twitch_bot.view.Twitch_API import TwitchAPI_call
 
 
 # TODO: Add a reply if anyone types "sudo !!" of "nice try"
@@ -23,6 +25,8 @@ class TwitchChatView:
         self.users_notified = set()
         self.notified_lock = asyncio.Lock()
         self.db = DB(self.channel, "twitch_bot.db")
+        self.twitch_client = TwitchAPI_call(client_id, client_secret)
+        self.user_exists_check = self.twitch_client.get_users
 
     async def on_message(self, msg: ChatMessage):
 
@@ -80,38 +84,21 @@ class TwitchChatView:
             await self.db.get_link(msg)
 
     async def leavemsg(self, msg: ChatMessage):
-
         args = msg.text.split(" ", 2)
-        if not len(args) == 3:
+        # twitch api call to check if a user exists before accessing db to leave a msg
+        # if len(args) >= 2 and self.user_exists_check(args[1].lstrip("@")):
+        if len(args) != 3:
             return await msg.reply("it looks like you used this command incorrectly, did you forget your message?")
 
         username, message = args[1], args[2]
-        # TODO - implement regex instead of below
-        if len(args) == 3 and msg.text.startswith("!") and args[0] == "!leavemsg" and args[1].startswith("@") and args[
-            1] != msg.user.name:
+        # TODO - implement regex instead of below --- lol ok
+        if (msg.text.startswith("!") and
+                args[0] == "!leavemsg" and
+                self.user_exists_check(args[1].lstrip("@")) and
+                args[1] != msg.user.name):
             await self.db.leave_message(msg)
-            # async with self.lock:
-            #     # INFO leave_message() in MODEL
-            #     with closing(sqlite3.connect("twitch_bot.db")) as con:
-            #         cur = con.cursor()
-            #         # url = "https://api.twitch.tv/helix/users?login="+args[1][1]
-            #         # url = "http://localhost/users?login="+args[1][1]
-            #         # res = requests.get(url)
-            #         try:
-            #             if cur.execute('SELECT COUNT (`sender_id`) FROM messages WHERE sender_id = ?',
-            #                            (msg.user.name,)).fetchone()[0] < 3:
-            #
-            #                 print(f'{msg.user.name}, {args[1][1:]}, {args[2]}')
-            #                 cur.execute(
-            #                     'INSERT INTO messages (`sender_id`, `receiver_id`, `messagetext`) VALUES (?,?,?)',
-            #                     (msg.user.name, args[1][1:].lower(), args[2]))
-            #                 con.commit()
-            #                 # INFO leave_message() in MODEL
-            #             else:
-            #                 await msg.reply("""3 msg limit reached, msgs are deleted after each stream ends or
-            #                 once delivered""")
-            #         except sqlite3.Error as e:
-            #             print(f'An error occurred: {e}')
+        # else:
+        #     await msg.reply("this user doesn't exist")
 
     # INFO - CHECK USER EXISTS - https://dev.twitch.tv/docs/api/reference/#get-users
     async def notify_user(self, msg: ChatMessage):

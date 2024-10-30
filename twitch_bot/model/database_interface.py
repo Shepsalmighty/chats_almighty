@@ -70,8 +70,6 @@ class DataBaseInterface:
                                                   (args[0].lstrip("!").lower(), self.channel))
 
                         cmd_link = link_exists.fetchone()[0]
-                        # INFO set_command() in MODEL
-
                         await msg.reply(cmd_link)
                         return cmd_link
 
@@ -79,6 +77,7 @@ class DataBaseInterface:
                         print(f'An error occurred: {e}')
 
     async def leave_message(self, msg):
+        # if msg.chat.twitch.get_users():
         args = msg.text.split(" ", 2)
         async with self.lock:
             with closing(sqlite3.connect(self.db_path)) as con:
