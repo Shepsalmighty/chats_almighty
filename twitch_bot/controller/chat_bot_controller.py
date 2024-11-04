@@ -1,5 +1,6 @@
 import asyncio
 from twitch_bot.view.twitch_chat_view import TwitchChatView
+# from view.twitch_chat_view import TwitchChatView
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 

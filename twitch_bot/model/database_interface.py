@@ -30,51 +30,51 @@ class DataBaseInterface:
 
     async def set_command(self, cmd):
         args = cmd.parameter.split(" ", 1)
-
-        async with self.lock:
-            with closing(sqlite3.connect(self.db_path)) as con:
-                cur = con.cursor()
-                try:
-                    if cur.execute('SELECT COUNT (`name`) FROM channels').fetchone()[0] == 0:
-                        cur.execute('INSERT INTO channels (`name`) VALUES (?)', (self.channel,))
-                        con.commit()
-
-                    command_id = cur.execute('''
-                    INSERT OR REPLACE INTO commands (`name`, `channel_id`)
-                    VALUES (?, (SELECT uid FROM channels WHERE name = ?))
-                    RETURNING uid''',
-                                             (args[0].lstrip("!").lower(), self.channel))
-                    cur.execute('''
-                    INSERT OR REPLACE INTO links (`command_id`, `linktext`)
-                    VALUES (?, ?)''', (command_id.fetchone()[0], args[1],))
-
-                    con.commit()
-
-                except sqlite3.Error as e:
-                    print(f'An error occurred: {e}')
-
-    async def get_link(self, msg):
-        args = msg.text.split(" ", 1)
         if len(args) < 2:
-            await msg.reply("command set incorrectly, did you forget to add the link?")
+            await cmd.reply("command set incorrectly, did you forget to add the link?")
+            
         else:
             async with self.lock:
                 with closing(sqlite3.connect(self.db_path)) as con:
                     cur = con.cursor()
                     try:
-                        link_exists = cur.execute('''SELECT l.linktext FROM links l
+                        if cur.execute('SELECT COUNT (`name`) FROM channels').fetchone()[0] == 0:
+                            cur.execute('INSERT INTO channels (`name`) VALUES (?)', (self.channel,))
+                            con.commit()
+
+                        command_id = cur.execute('''
+                        INSERT OR REPLACE INTO commands (`name`, `channel_id`)
+                        VALUES (?, (SELECT uid FROM channels WHERE name = ?))
+                        RETURNING uid''',
+                                                 (args[0].lstrip("!").lower(), self.channel))
+                        cur.execute('''
+                        INSERT OR REPLACE INTO links (`command_id`, `linktext`)
+                        VALUES (?, ?)''', (command_id.fetchone()[0], args[1],))
+
+                        con.commit()
+
+                    except sqlite3.Error as e:
+                        print(f'An error occurred: {e}')
+
+    async def get_link(self, msg):
+        args = msg.text.split(" ", 1)
+        async with self.lock:
+            with closing(sqlite3.connect(self.db_path)) as con:
+                cur = con.cursor()
+                try:
+                    link_exists = cur.execute('''SELECT l.linktext FROM links l
                                                                     JOIN commands c ON l.command_id = c.uid
                                                                     JOIN channels ch ON c.channel_id = ch.uid
                                                                     WHERE LOWER(c.name) = (?) AND ch.name = (?)
                                                                     ''',
-                                                  (args[0].lstrip("!").lower(), self.channel))
+                                              (args[0].lstrip("!").lower(), self.channel))
 
-                        cmd_link = link_exists.fetchone()[0]
-                        await msg.reply(cmd_link)
-                        return cmd_link
+                    cmd_link = link_exists.fetchone()[0]
+                    await msg.reply(cmd_link)
+                    return cmd_link
 
-                    except sqlite3.Error as e:
-                        print(f'An error occurred: {e}')
+                except sqlite3.Error as e:
+                    print(f'An error occurred: {e}')
 
     async def leave_message(self, msg):
         # if msg.chat.twitch.get_users():
