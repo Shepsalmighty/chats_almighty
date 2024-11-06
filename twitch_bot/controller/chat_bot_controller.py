@@ -1,8 +1,8 @@
 import asyncio
 from twitch_bot.view.twitch_chat_view import TwitchChatView
 # from view.twitch_chat_view import TwitchChatView
-from sqlalchemy import create_engine
-from sqlalchemy.orm import Session
+#from sqlalchemy import create_engine
+#from sqlalchemy.orm import Session
 
 
 # from twitch_bot.model.database_interface import DataBase
@@ -19,14 +19,16 @@ class ChatBotController:
         self.view = TwitchChatView(client_id, client_secret, path, target_channel)
 
         # INFO create a relative path to DB for SQLalchemy
-        self.engine = create_engine("sqlite:///twitch_bot.db", echo=True)
+        # self.engine = create_engine("sqlite:///twitch_bot.db", echo=True)
 
     def run(self):
         # NOTE every transaction with the DataBase runs inside this, so in db_interface, everything is executed within this session
-        with Session(self.engine) as session:
+        #INFO sqlalchemy context manager below on 27
+        # with Session(self.engine) as session:
             # self.model = DataBase(session)
             # self.model.add_channel("Sea_of_Tranquility")
             # self.model.add_link("Sea_of_Tranquility", "discord", "foo")
 
-            asyncio.run(self.view.run())
-            session.commit()
+        asyncio.run(self.view.run())
+            # sqlalchemy stuff
+            # session.commit()

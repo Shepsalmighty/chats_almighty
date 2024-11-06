@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from gettext import textdomain
 
 import pytest
-from sqlalchemy.sql.coercions import expect
+#from sqlalchemy.sql.coercions import expect
 
 from twitch_bot.model.database_interface import DataBaseInterface
 
