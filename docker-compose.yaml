@@ -1,13 +1,13 @@
-#services:
-#  bot:
-#    image: ghcr.io/shepsalmighty/chats_almighty
-#    volumes:
-#      - sqlite-data:/app/db
-#volumes:
-#  sqlite-data: {}
-
 services:
   bot:
     image: ghcr.io/shepsalmighty/chats_almighty
     volumes:
       - sqlite-data:/app/db
+volumes:
+  sqlite-data: {}
+
+#services:
+#  bot:
+#    image: ghcr.io/shepsalmighty/chats_almighty
+#    volumes:
+#      - sqlite-data:/app/db
