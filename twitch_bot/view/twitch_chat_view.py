@@ -24,7 +24,7 @@ class TwitchChatView:
         self.lock = asyncio.Lock()
         self.users_notified = set()
         self.notified_lock = asyncio.Lock()
-        self.db = DB(self.channel, "twitch_bot.db")
+        self.db = DB(self.channel, "db/twitch_bot.db")
         self.twitch_client = TwitchAPI_call(client_id, client_secret)
         self.user_exists_check = self.twitch_client.get_users
 
