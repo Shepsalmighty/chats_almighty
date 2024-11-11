@@ -3,6 +3,9 @@ services:
     image: ghcr.io/shepsalmighty/chats_almighty
     volumes:
       - sqlite-data:/app/db
+    environment:
+      -TWITCH_CLIENT_ID = CHANGE ME
+      -TWITCH_CLIENT_SECRET = CHANGE ME
 volumes:
   sqlite-data: {}
 
