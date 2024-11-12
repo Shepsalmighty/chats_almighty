@@ -4,8 +4,8 @@ services:
     volumes:
       - sqlite-data:/app/db
     environment:
-      -TWITCH_CLIENT_ID = CHANGE ME
-      -TWITCH_CLIENT_SECRET = CHANGE ME
+      - TWITCH_CLIENT_ID = CHANGE ME
+      - TWITCH_CLIENT_SECRET = CHANGE ME
 volumes:
   sqlite-data: {}
 
