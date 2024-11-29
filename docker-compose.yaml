@@ -3,14 +3,10 @@ services:
     image: ghcr.io/shepsalmighty/chats_almighty
     volumes:
       - sqlite-data:/app/db
+    ports:
+      - 5000:5000
     environment:
-      - TWITCH_CLIENT_ID = CHANGE ME
-      - TWITCH_CLIENT_SECRET = CHANGE ME
+      - TWITCH_CLIENT_ID=CHANGE_ME #<<<< YOUR CLIENT_ID HERE NO SPACES BEFORE OR AFTER THE =
+      - TWITCH_CLIENT_SECRET=CHANGE_ME #<<<< YOUR CLIENT_SECRET HERE NO SPACES BEFORE OR AFTER THE =
 volumes:
   sqlite-data: {}
-
-#services:
-#  bot:
-#    image: ghcr.io/shepsalmighty/chats_almighty
-#    volumes:
-#      - sqlite-data:/app/db
