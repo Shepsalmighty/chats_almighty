@@ -1,5 +1,5 @@
 #client_id and client_secret can be found here: https://dev.twitch.tv/console/apps/create
 
-TWITCH_CLIENT_ID = CHANGE ME
+TWITCH_CLIENT_ID=CHANGE ME
 
-TWITCH_CLIENT_SECRET = CHANGE ME
+TWITCH_CLIENT_SECRET=CHANGE ME

@@ -6,6 +6,7 @@ services:
     ports:
       - 5000:5000
     environment:
+#    #client_id and client_secret can be found here: https://dev.twitch.tv/console/apps/create
       - TWITCH_CLIENT_ID=CHANGE_ME #<<<< YOUR CLIENT_ID HERE NO SPACES BEFORE OR AFTER THE =
       - TWITCH_CLIENT_SECRET=CHANGE_ME #<<<< YOUR CLIENT_SECRET HERE NO SPACES BEFORE OR AFTER THE =
 volumes:
