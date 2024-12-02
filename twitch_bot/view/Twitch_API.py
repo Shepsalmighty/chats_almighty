@@ -54,3 +54,4 @@ class TwitchAPI_call:
 
         return response.status_code == 200
         # return response.json().get('data', [])
+

@@ -8,6 +8,7 @@ from twitchAPI.type import AuthScope, ChatEvent
 from twitch_bot.model.database_interface import DataBaseInterface as DB
 import requests
 from twitch_bot.view.Twitch_API import TwitchAPI_call
+from twitch_bot.model.sqlite_db import DBMigration
 
 
 # TODO: Add a reply if anyone types "sudo !!" of "nice try"
@@ -24,6 +25,7 @@ class TwitchChatView:
         self.lock = asyncio.Lock()
         self.users_notified = set()
         self.notified_lock = asyncio.Lock()
+        self.create_tables = DBMigration("db/twitch_bot.db").create_tables()
         self.db = DB(self.channel, "db/twitch_bot.db")
         self.twitch_client = TwitchAPI_call(client_id, client_secret)
         self.user_exists_check = self.twitch_client.get_users
@@ -130,7 +132,8 @@ class TwitchChatView:
         for msgs in await self.db.get_message(msg):
             await msg.reply(msgs)
 
-    # TODO: add some tests
+
+
 
     # this is where we set up the bot
     async def run(self):
@@ -139,7 +142,9 @@ class TwitchChatView:
         # auth = UserAuthenticator(twitch, USER_SCOPE)
         # token, refresh_token = await auth.authenticate()
         # await twitch.set_user_authentication(token, USER_SCOPE, refresh_token)
-        helper = UserAuthenticationStorageHelper(twitch, TwitchChatView.USER_SCOPE, storage_path=self.path)
+        helper = UserAuthenticationStorageHelper(twitch,
+                                                 TwitchChatView.USER_SCOPE,
+                                                 storage_path=self.path)
         await helper.bind()
 
         # create chat instance
